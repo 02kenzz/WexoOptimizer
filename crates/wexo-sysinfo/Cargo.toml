@@ -1,0 +1,16 @@
+[package]
+name = "wexo-sysinfo"
+description = "Hardware and OS collectors for Wexo Optimizer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+wexo-core = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }
+sysinfo = "0.33"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_Shell"] }

@@ -1,0 +1,12 @@
+[package]
+name = "wexo-monitor"
+description = "Background sampling engine and metric ring buffer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+wexo-core = { workspace = true }
+serde = { workspace = true }
+tracing = { workspace = true }

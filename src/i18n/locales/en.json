@@ -1,0 +1,211 @@
+{
+  "app": {
+    "name": "Wexo Optimizer",
+    "tagline": "Diagnose · Optimize · Control",
+    "version": "Version {{version}}",
+    "admin": "Administrator",
+    "standard": "Standard user",
+    "browserMode": "Browser mode · simulated data",
+    "foundation": "M0 · Foundation"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "diagnostics": "Diagnostics",
+    "optimizations": "Optimizations",
+    "monitor": "Monitor",
+    "history": "History",
+    "settings": "Settings"
+  },
+  "common": {
+    "loading": "Loading…",
+    "comingSoon": "Coming soon",
+    "apply": "Apply",
+    "applySelected": "Apply selected",
+    "risk": "Risk",
+    "rebootRequired": "Reboot required",
+    "noReboot": "No reboot",
+    "unknown": "Unknown",
+    "viewAll": "View all",
+    "refresh": "Refresh",
+    "severity": "Severity",
+    "confidence": "Confidence",
+    "evidence": "Evidence",
+    "milestone": "Available in {{milestone}}",
+    "browserHint": "Demo data. Open the desktop app to see your real hardware.",
+    "error": "Could not load information",
+    "retry": "Retry"
+  },
+  "risk": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "severity": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "critical": "Critical"
+  },
+  "confidence": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "categories": {
+    "power": "Power",
+    "services": "Services",
+    "startup": "Startup",
+    "file-system": "File system",
+    "network": "Network",
+    "memory": "Memory",
+    "gpu": "GPU",
+    "visuals": "Visuals",
+    "privacy": "Privacy"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "System health in real time",
+    "health": "System health",
+    "healthSummary": "{{count}} active findings · review the recommendations",
+    "allGood": "All subsystems within parameters",
+    "updated": "Updated {{seconds}} s ago",
+    "excellent": "Excellent",
+    "good": "Good",
+    "fair": "Needs work",
+    "poor": "Needs attention",
+    "live": "Right now",
+    "cpu": "CPU",
+    "memory": "Memory",
+    "storage": "Storage",
+    "network": "Network",
+    "free": "{{value}} free",
+    "recommendations": "Recommendations",
+    "noRecommendations": "No issues detected",
+    "noRecommendationsHint": "The system is behaving within expected parameters.",
+    "hardware": "Detected hardware",
+    "operatingSystem": "Operating system",
+    "cores": "{{physical}} cores · {{logical}} threads",
+    "frequency": "Current frequency",
+    "usedOf": "{{used}} of {{total}}",
+    "quickActions": "Quick actions",
+    "optimizeNow": "Analyze and optimize",
+    "optimizeNowHint": "Full diagnostic and prioritized recommendations",
+    "openMonitor": "Open monitor",
+    "openMonitorHint": "Live metrics, processes and alerts",
+    "viewDiagnostics": "View full diagnostic",
+    "engineNote": "The optimization engine with rollback lands in M2."
+  },
+  "diagnostics": {
+    "title": "Diagnostics",
+    "subtitle": "Hardware profile and bottlenecks",
+    "profile": "System profile",
+    "processor": "Processor",
+    "memory": "Memory",
+    "storage": "Storage",
+    "system": "Operating system",
+    "bottlenecks": "Bottlenecks",
+    "noBottlenecks": "No bottlenecks detected",
+    "noBottlenecksHint": "The system is behaving within expected parameters.",
+    "usage": "Usage",
+    "swap": "Swap",
+    "channels": "Channels",
+    "dualChannel": "Dual channel",
+    "singleChannel": "Single channel",
+    "freeOf": "{{free}} free of {{total}}",
+    "removable": "Removable",
+    "kernel": "Kernel",
+    "hostname": "Hostname",
+    "architecture": "Architecture",
+    "confidence": "{{value}} confidence"
+  },
+  "optimizations": {
+    "title": "Optimizations",
+    "subtitle": "Atomic, explained and reversible changes",
+    "all": "All",
+    "previewNote": "Experience preview. The real engine with snapshot and rollback lands in M2.",
+    "unavailable": "Not available yet",
+    "expand": "View technical rationale",
+    "why": "Why",
+    "what": "What it does",
+    "empty": "No optimizations in this category"
+  },
+  "monitor": {
+    "title": "Monitor",
+    "subtitle": "CPU, GPU, RAM, disk and network in real time",
+    "placeholderTitle": "Monitor under construction",
+    "placeholderHint": "The sampling service, 60 fps charts and alerts arrive in M3.",
+    "liveCpu": "Total CPU",
+    "liveMemory": "Memory",
+    "liveDisk": "Free disk",
+    "sampling": "Sampling interval",
+    "targets": "Target: < 1% CPU and < 50 MB RAM idle"
+  },
+  "history": {
+    "title": "History & rollback",
+    "subtitle": "Every change recorded and reversible",
+    "emptyTitle": "No changes yet",
+    "emptyHint": "When you apply an optimization it will appear here with its snapshot and undo option.",
+    "rollbackTitle": "One-click rollback",
+    "rollbackHint": "Snapshots preserve the exact state before each change, validated by hash."
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Application preferences",
+    "appearance": "Appearance",
+    "language": "Language",
+    "theme": "Theme",
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeHighContrast": "High contrast",
+    "monitor": "Monitor",
+    "monitorInterval": "Sampling interval",
+    "monitorIntervalHint": "{{ms}} ms · a lower interval gives more resolution and uses more resources",
+    "telemetry": "Telemetry",
+    "telemetryHint": "Off by default. Nothing is ever sent without your consent.",
+    "updates": "Updates",
+    "channel": "Channel",
+    "stable": "Stable",
+    "beta": "Beta",
+    "about": "About",
+    "version": "Version",
+    "os": "System",
+    "arch": "Architecture",
+    "privileges": "Privileges",
+    "logs": "Log folder",
+    "admin": "Administrator",
+    "standard": "Standard user",
+    "saved": "Changes are saved automatically",
+    "tray": "Minimize to tray"
+  },
+  "insights": {
+    "memoryHigh": {
+      "title": "Memory at the limit",
+      "desc": "RAM usage is at {{percent}}%. Closing background apps or adding memory will improve responsiveness."
+    },
+    "ramLow": {
+      "title": "Low memory capacity",
+      "desc": "With {{total}} of RAM the system will fall back to the page file under demanding workloads."
+    },
+    "singleChannel": {
+      "title": "Single-channel memory",
+      "desc": "Only one memory channel was detected. Installing modules in dual channel can increase available bandwidth."
+    },
+    "diskLow": {
+      "title": "Low space on {{mount}}",
+      "desc": "Only {{free}} free ({{percent}}%). Windows needs space for the page file and updates."
+    },
+    "hddSystem": {
+      "title": "Mechanical drive detected",
+      "desc": "An HDD as the primary drive limits boot time and application loading compared to an SSD or NVMe."
+    },
+    "noNvme": {
+      "title": "No NVMe detected",
+      "desc": "No NVMe drive was detected. If your board supports it, it is the most cost-effective storage upgrade."
+    },
+    "cpuHigh": {
+      "title": "CPU under heavy load",
+      "desc": "Sustained CPU usage is at {{percent}}%. Review active processes in the monitor."
+    }
+  }
+}

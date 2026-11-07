@@ -1,0 +1,211 @@
+{
+  "app": {
+    "name": "Wexo Optimizer",
+    "tagline": "Diagnóstico · Optimización · Control",
+    "version": "Versión {{version}}",
+    "admin": "Administrador",
+    "standard": "Usuario estándar",
+    "browserMode": "Modo navegador · datos simulados",
+    "foundation": "M0 · Foundation"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "diagnostics": "Diagnóstico",
+    "optimizations": "Optimizaciones",
+    "monitor": "Monitor",
+    "history": "Historial",
+    "settings": "Configuración"
+  },
+  "common": {
+    "loading": "Cargando…",
+    "comingSoon": "Próximamente",
+    "apply": "Aplicar",
+    "applySelected": "Aplicar seleccionadas",
+    "risk": "Riesgo",
+    "rebootRequired": "Requiere reinicio",
+    "noReboot": "Sin reinicio",
+    "unknown": "Desconocido",
+    "viewAll": "Ver todo",
+    "refresh": "Actualizar",
+    "severity": "Severidad",
+    "confidence": "Confianza",
+    "evidence": "Evidencia",
+    "milestone": "Disponible en {{milestone}}",
+    "browserHint": "Datos de demostración. Abre la app de escritorio para ver tu equipo real.",
+    "error": "No se pudo cargar la información",
+    "retry": "Reintentar"
+  },
+  "risk": {
+    "low": "Bajo",
+    "medium": "Medio",
+    "high": "Alto"
+  },
+  "severity": {
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta",
+    "critical": "Crítica"
+  },
+  "confidence": {
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta"
+  },
+  "categories": {
+    "power": "Energía",
+    "services": "Servicios",
+    "startup": "Inicio",
+    "file-system": "Sistema de archivos",
+    "network": "Red",
+    "memory": "Memoria",
+    "gpu": "GPU",
+    "visuals": "Visuales",
+    "privacy": "Privacidad"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Estado del sistema en tiempo real",
+    "health": "Salud del sistema",
+    "healthSummary": "{{count}} hallazgos activos · revisa las recomendaciones",
+    "allGood": "Todos los subsistemas dentro de parámetros",
+    "updated": "Actualizado hace {{seconds}} s",
+    "excellent": "Excelente",
+    "good": "Buen estado",
+    "fair": "Mejorable",
+    "poor": "Requiere atención",
+    "live": "Ahora mismo",
+    "cpu": "CPU",
+    "memory": "Memoria",
+    "storage": "Almacenamiento",
+    "network": "Red",
+    "free": "{{value}} libres",
+    "recommendations": "Recomendaciones",
+    "noRecommendations": "Sin problemas detectados",
+    "noRecommendationsHint": "El sistema se comporta dentro de los parámetros esperados.",
+    "hardware": "Hardware detectado",
+    "operatingSystem": "Sistema operativo",
+    "cores": "{{physical}} núcleos · {{logical}} hilos",
+    "frequency": "Frecuencia actual",
+    "usedOf": "{{used}} de {{total}}",
+    "quickActions": "Acciones rápidas",
+    "optimizeNow": "Analizar y optimizar",
+    "optimizeNowHint": "Diagnóstico completo y recomendaciones priorizadas",
+    "openMonitor": "Abrir monitor",
+    "openMonitorHint": "Métricas en vivo, procesos y alertas",
+    "viewDiagnostics": "Ver diagnóstico completo",
+    "engineNote": "El motor de optimización con rollback llega en M2."
+  },
+  "diagnostics": {
+    "title": "Diagnóstico",
+    "subtitle": "Perfil de hardware y cuellos de botella",
+    "profile": "Perfil del sistema",
+    "processor": "Procesador",
+    "memory": "Memoria",
+    "storage": "Almacenamiento",
+    "system": "Sistema operativo",
+    "bottlenecks": "Cuellos de botella",
+    "noBottlenecks": "No se han detectado cuellos de botella",
+    "noBottlenecksHint": "El sistema se comporta dentro de los parámetros esperados.",
+    "usage": "Uso",
+    "swap": "Swap",
+    "channels": "Canales",
+    "dualChannel": "Dual channel",
+    "singleChannel": "Single channel",
+    "freeOf": "{{free}} libres de {{total}}",
+    "removable": "Extraíble",
+    "kernel": "Kernel",
+    "hostname": "Equipo",
+    "architecture": "Arquitectura",
+    "confidence": "Confianza {{value}}"
+  },
+  "optimizations": {
+    "title": "Optimizaciones",
+    "subtitle": "Cambios atómicos, explicados y reversibles",
+    "all": "Todas",
+    "previewNote": "Vista previa de la experiencia. El motor real con snapshot y rollback llega en M2.",
+    "unavailable": "No disponible aún",
+    "expand": "Ver explicación técnica",
+    "why": "Por qué",
+    "what": "Qué hace",
+    "empty": "No hay optimizaciones en esta categoría"
+  },
+  "monitor": {
+    "title": "Monitor",
+    "subtitle": "CPU, GPU, RAM, disco y red en tiempo real",
+    "placeholderTitle": "Monitor en construcción",
+    "placeholderHint": "El servicio de muestreo, los gráficos de 60 fps y las alertas llegarán en M3.",
+    "liveCpu": "CPU total",
+    "liveMemory": "Memoria",
+    "liveDisk": "Disco libre",
+    "sampling": "Intervalo de muestreo",
+    "targets": "Objetivo: < 1% CPU y < 50 MB RAM en idle"
+  },
+  "history": {
+    "title": "Historial y rollback",
+    "subtitle": "Cada cambio registrado y reversible",
+    "emptyTitle": "Todavía no hay cambios",
+    "emptyHint": "Cuando apliques una optimización aparecerá aquí con su snapshot y la opción de deshacer.",
+    "rollbackTitle": "Rollback en 1 clic",
+    "rollbackHint": "Los snapshots guardan el estado exacto anterior a cada cambio, validado por hash."
+  },
+  "settings": {
+    "title": "Configuración",
+    "subtitle": "Preferencias de la aplicación",
+    "appearance": "Apariencia",
+    "language": "Idioma",
+    "theme": "Tema",
+    "themeSystem": "Sistema",
+    "themeLight": "Claro",
+    "themeDark": "Oscuro",
+    "themeHighContrast": "Alto contraste",
+    "monitor": "Monitor",
+    "monitorInterval": "Intervalo de muestreo",
+    "monitorIntervalHint": "{{ms}} ms · menos intervalo ofrece más resolución y consume más recursos",
+    "telemetry": "Telemetría",
+    "telemetryHint": "Desactivada por defecto. Nunca se envía información sin tu consentimiento.",
+    "updates": "Actualizaciones",
+    "channel": "Canal",
+    "stable": "Estable",
+    "beta": "Beta",
+    "about": "Acerca de",
+    "version": "Versión",
+    "os": "Sistema",
+    "arch": "Arquitectura",
+    "privileges": "Privilegios",
+    "logs": "Carpeta de logs",
+    "admin": "Administrador",
+    "standard": "Usuario estándar",
+    "saved": "Los cambios se guardan automáticamente",
+    "tray": "Minimizar a la bandeja"
+  },
+  "insights": {
+    "memoryHigh": {
+      "title": "Memoria al límite",
+      "desc": "El uso de RAM es del {{percent}}%. Cerrar aplicaciones en segundo plano o ampliar la memoria mejorará la fluidez."
+    },
+    "ramLow": {
+      "title": "Memoria insuficiente",
+      "desc": "Con {{total}} de RAM el sistema recurrirá al archivo de paginación en cargas exigentes."
+    },
+    "singleChannel": {
+      "title": "Memoria en un solo canal",
+      "desc": "Se ha detectado un único canal de memoria. Instalar módulos en dual channel puede aumentar el ancho de banda disponible."
+    },
+    "diskLow": {
+      "title": "Poco espacio en {{mount}}",
+      "desc": "Solo quedan {{free}} libres ({{percent}}%). Windows necesita espacio para el archivo de paginación y las actualizaciones."
+    },
+    "hddSystem": {
+      "title": "Disco mecánico detectado",
+      "desc": "Un HDD como unidad principal limita el arranque y la carga de aplicaciones frente a un SSD o NVMe."
+    },
+    "noNvme": {
+      "title": "Sin NVMe detectado",
+      "desc": "No se ha detectado una unidad NVMe. Si tu placa lo permite, es la mejora de almacenamiento más rentable."
+    },
+    "cpuHigh": {
+      "title": "CPU muy cargada",
+      "desc": "El uso sostenido de CPU es del {{percent}}%. Revisa los procesos activos desde el monitor."
+    }
+  }
+}
