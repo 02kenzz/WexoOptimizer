@@ -13,4 +13,5 @@ tracing = { workspace = true }
 sysinfo = "0.33"
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_UI_Shell"] }
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Performance", "Win32_UI_Shell"] }
+wmi = "0.18"

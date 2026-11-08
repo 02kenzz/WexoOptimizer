@@ -5,8 +5,8 @@
     "version": "Versión {{version}}",
     "admin": "Administrador",
     "standard": "Usuario estándar",
-    "browserMode": "Modo navegador · datos simulados",
-    "foundation": "M0 · Foundation"
+    "browserMode": "Modo navegador · sin backend",
+    "foundation": "M1 · Monitor en vivo"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -31,7 +31,8 @@
     "confidence": "Confianza",
     "evidence": "Evidencia",
     "milestone": "Disponible en {{milestone}}",
-    "browserHint": "Datos de demostración. Abre la app de escritorio para ver tu equipo real.",
+    "browserHint": "Abre la aplicación de escritorio para leer datos reales del sistema.",
+    "backendUnavailable": "El backend de Wexo Optimizer no está disponible. Abre la aplicación de escritorio.",
     "error": "No se pudo cargar la información",
     "retry": "Reintentar"
   },
@@ -50,6 +51,14 @@
     "low": "Baja",
     "medium": "Media",
     "high": "Alta"
+  },
+  "components": {
+    "cpu": "CPU",
+    "gpu": "GPU",
+    "memory": "Memoria",
+    "disk": "Disco",
+    "network": "Red",
+    "system": "Sistema"
   },
   "categories": {
     "power": "Energía",
@@ -79,6 +88,7 @@
     "storage": "Almacenamiento",
     "network": "Red",
     "free": "{{value}} libres",
+    "uptime": "Encendido",
     "recommendations": "Recomendaciones",
     "noRecommendations": "Sin problemas detectados",
     "noRecommendationsHint": "El sistema se comporta dentro de los parámetros esperados.",
@@ -111,11 +121,32 @@
     "channels": "Canales",
     "dualChannel": "Dual channel",
     "singleChannel": "Single channel",
+    "modules": "Módulos",
+    "moduleCount": "{{value}} módulos instalados",
+    "memorySpeed": "Velocidad de memoria",
+    "cores": "Núcleos",
+    "baseFrequency": "Frecuencia base",
     "freeOf": "{{free}} libres de {{total}}",
     "removable": "Extraíble",
     "kernel": "Kernel",
+    "build": "Compilación",
     "hostname": "Equipo",
     "architecture": "Arquitectura",
+    "uptime": "Tiempo encendido",
+    "systemDisk": "Disco del sistema",
+    "gpus": "Tarjetas gráficas",
+    "noGpu": "Sin GPU detectada",
+    "window": "Ventana de análisis",
+    "windowHint": "Aún no hay muestras suficientes. Las reglas dinámicas necesitan al menos 5 muestras del monitor.",
+    "sampleCount": "{{value}} muestras",
+    "windowDuration": "Duración",
+    "cpuP50": "CPU mediana",
+    "cpuP95": "CPU p95",
+    "memoryP95": "Memoria p95",
+    "diskBusyP95": "Disco p95",
+    "diskQueueP95": "Cola de disco p95",
+    "networkRx": "Red recibida",
+    "networkTx": "Red enviada",
     "confidence": "Confianza {{value}}"
   },
   "optimizations": {
@@ -132,11 +163,24 @@
   "monitor": {
     "title": "Monitor",
     "subtitle": "CPU, GPU, RAM, disco y red en tiempo real",
-    "placeholderTitle": "Monitor en construcción",
-    "placeholderHint": "El servicio de muestreo, los gráficos de 60 fps y las alertas llegarán en M3.",
     "liveCpu": "CPU total",
     "liveMemory": "Memoria",
-    "liveDisk": "Disco libre",
+    "liveDisk": "Disco",
+    "liveNetwork": "Red",
+    "liveSince": "Tiempo encendido {{value}}",
+    "waiting": "Esperando la primera muestra…",
+    "sampleCount": "{{value}} muestras",
+    "diskThroughput": "L {{read}} · E {{write}}",
+    "upload": "Subida {{value}}",
+    "chartTitle": "Historial en vivo",
+    "chartTime": "Hora",
+    "chartCpu": "CPU",
+    "chartMemory": "Memoria",
+    "chartDisk": "Disco",
+    "cores": "Núcleos ({{value}})",
+    "perCore": "Por núcleo",
+    "core": "Núcleo",
+    "noCores": "Sin datos por núcleo",
     "sampling": "Intervalo de muestreo",
     "targets": "Objetivo: < 1% CPU y < 50 MB RAM en idle"
   },
@@ -179,33 +223,61 @@
     "tray": "Minimizar a la bandeja"
   },
   "insights": {
-    "memoryHigh": {
-      "title": "Memoria al límite",
-      "desc": "El uso de RAM es del {{percent}}%. Cerrar aplicaciones en segundo plano o ampliar la memoria mejorará la fluidez."
+    "rules": {
+      "memoryLowCapacity": {
+        "title": "Memoria insuficiente",
+        "desc": "Con {{totalGb}} GB de RAM el sistema recurrirá al archivo de paginación en cargas exigentes."
+      },
+      "memorySingleChannel": {
+        "title": "Memoria en un solo canal",
+        "desc": "{{modules}} módulo(s) en un único canal. Instalar módulos en dual channel puede aumentar el ancho de banda de {{totalGb}} GB de RAM."
+      },
+      "diskSpace": {
+        "title": "Poco espacio en {{mount}}",
+        "desc": "Solo quedan {{freeGb}} GB libres ({{freePercent}}%). Windows necesita espacio para el archivo de paginación y las actualizaciones."
+      },
+      "diskHddSystem": {
+        "title": "Disco mecánico como unidad principal",
+        "desc": "{{mount}} es un HDD, lo que limita el arranque y la carga de aplicaciones frente a un SSD o NVMe."
+      },
+      "networkNoAdapter": {
+        "title": "Sin adaptador de red",
+        "desc": "No se ha detectado ningún adaptador de red activo."
+      },
+      "cpuSustained": {
+        "title": "CPU muy cargada",
+        "desc": "El uso sostenido de CPU es del {{cpuP95}}% (mediana {{cpuP50}}%) en {{samples}} muestras. Revisa los procesos activos desde el monitor."
+      },
+      "cpuThrottle": {
+        "title": "CPU por debajo de su frecuencia base",
+        "desc": "La frecuencia mediana es {{frequencyMhz}} MHz frente a {{baseFrequencyMhz}} MHz de base con la CPU al {{cpuP50}}%. Puede deberse a límites térmicos o de energía."
+      },
+      "memoryPressure": {
+        "title": "Presión de memoria",
+        "desc": "El uso de RAM alcanza el {{usedPercent}}% y solo quedan {{availableGb}} GB disponibles. Cerrar aplicaciones en segundo plano o ampliar la memoria mejorará la fluidez."
+      },
+      "diskSaturated": {
+        "title": "Disco saturado",
+        "desc": "El disco está ocupado el {{busyP95}}% del tiempo con una cola de {{queueP95}} en {{samples}} muestras. Revisa qué procesos escriben en disco."
+      }
     },
-    "ramLow": {
-      "title": "Memoria insuficiente",
-      "desc": "Con {{total}} de RAM el sistema recurrirá al archivo de paginación en cargas exigentes."
-    },
-    "singleChannel": {
-      "title": "Memoria en un solo canal",
-      "desc": "Se ha detectado un único canal de memoria. Instalar módulos en dual channel puede aumentar el ancho de banda disponible."
-    },
-    "diskLow": {
-      "title": "Poco espacio en {{mount}}",
-      "desc": "Solo quedan {{free}} libres ({{percent}}%). Windows necesita espacio para el archivo de paginación y las actualizaciones."
-    },
-    "hddSystem": {
-      "title": "Disco mecánico detectado",
-      "desc": "Un HDD como unidad principal limita el arranque y la carga de aplicaciones frente a un SSD o NVMe."
-    },
-    "noNvme": {
-      "title": "Sin NVMe detectado",
-      "desc": "No se ha detectado una unidad NVMe. Si tu placa lo permite, es la mejora de almacenamiento más rentable."
-    },
-    "cpuHigh": {
-      "title": "CPU muy cargada",
-      "desc": "El uso sostenido de CPU es del {{percent}}%. Revisa los procesos activos desde el monitor."
+    "evidence": {
+      "totalGb": "{{value}} GB de RAM",
+      "modules": "{{value}} módulo(s)",
+      "mount": "{{value}}",
+      "freeGb": "{{value}} GB libres",
+      "freePercent": "{{value}}% libres",
+      "cpuP95": "CPU p95 {{value}}%",
+      "cpuP50": "CPU mediana {{value}}%",
+      "samples": "{{value}} muestras",
+      "windowSec": "{{value}} s de ventana",
+      "frequencyMhz": "{{value}} MHz",
+      "baseFrequencyMhz": "Base {{value}} MHz",
+      "usedPercent": "RAM p95 {{value}}%",
+      "availableGb": "{{value}} GB disponibles",
+      "swapPercent": "Swap {{value}}%",
+      "busyP95": "Disco p95 {{value}}%",
+      "queueP95": "Cola p95 {{value}}"
     }
   }
 }

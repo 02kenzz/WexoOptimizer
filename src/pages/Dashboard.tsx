@@ -8,27 +8,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Meter } from "@/components/ui/Meter";
 import { ScoreRing } from "@/components/ui/ScoreRing";
-import { useSystemProfile } from "@/hooks/useSystemProfile";
-import { computeHealth, computeInsights, healthLabel } from "@/lib/insights";
+import { useDiagnostics } from "@/hooks/useDiagnostics";
+import { useLiveMetrics } from "@/hooks/useLiveMetrics";
+import { bottleneckKey } from "@/lib/bottlenecks";
 import { usageTone } from "@/lib/tone";
-import { cn, formatBytes, formatMhz, formatPercent } from "@/lib/utils";
-import type { DiskInfo, SystemProfile } from "@/types";
+import {
+  cn,
+  formatBytes,
+  formatDuration,
+  formatMhz,
+  formatPercent,
+  formatRate,
+  healthLabel,
+  scoreTone,
+} from "@/lib/utils";
+import type { DiagnosticReport, DiskInfo } from "@/types";
 
-function systemDisk(profile: SystemProfile): DiskInfo | undefined {
+function systemDisk(profile: DiagnosticReport["profile"]): DiskInfo | undefined {
   return (
     profile.disks.find((disk) => disk.mountPoint.toUpperCase().startsWith("C:")) ?? profile.disks[0]
   );
 }
 
-function freePercent(disk: DiskInfo | undefined): number {
+function usedPercent(disk: DiskInfo | undefined): number {
   if (!disk || disk.totalBytes === 0) return 0;
-  return (disk.availableBytes / disk.totalBytes) * 100;
-}
-
-function toneForHealth(score: number): "ok" | "warn" | "danger" {
-  if (score >= 75) return "ok";
-  if (score >= 50) return "warn";
-  return "danger";
+  return 100 - (disk.availableBytes / disk.totalBytes) * 100;
 }
 
 function LiveRow({
@@ -72,16 +76,17 @@ function Skeleton() {
 
 export function Dashboard() {
   const { t } = useTranslation();
-  const { data: profile, isLoading, isError, refetch } = useSystemProfile(2500);
+  const { data: report, isLoading, isError, refetch } = useDiagnostics(5000);
+  const { latest } = useLiveMetrics(120);
 
   if (isLoading) return <Skeleton />;
 
-  if (isError || !profile) {
+  if (isError || !report) {
     return (
       <EmptyState
         icon={Activity}
         title={t("common.error")}
-        description={t("common.browserHint")}
+        description={t("common.backendUnavailable")}
         action={
           <button
             type="button"
@@ -95,14 +100,20 @@ export function Dashboard() {
     );
   }
 
-  const health = computeHealth(profile);
-  const insights = computeInsights(profile);
+  const { profile, health, bottlenecks } = report;
   const mainDisk = systemDisk(profile);
-  const diskFree = freePercent(mainDisk);
-  const memoryUsed = profile.memory.totalBytes
-    ? (profile.memory.usedBytes / profile.memory.totalBytes) * 100
-    : 0;
   const label = healthLabel(health.global);
+
+  const cpuPercent = latest?.cpuPercent ?? profile.cpu.usagePercent;
+  const memoryPercent = latest
+    ? latest.memoryPercent
+    : profile.memory.totalBytes
+      ? (profile.memory.usedBytes / profile.memory.totalBytes) * 100
+      : 0;
+  const memoryUsed = latest?.memoryUsedBytes ?? profile.memory.usedBytes;
+  const memoryTotal = latest?.memoryTotalBytes ?? profile.memory.totalBytes;
+  const diskUsed = usedPercent(mainDisk);
+  const networkName = profile.networks[0]?.name ?? t("dashboard.network");
 
   const subsystems = [
     { label: t("dashboard.cpu"), score: health.cpu },
@@ -119,13 +130,13 @@ export function Dashboard() {
             <ScoreRing value={health.global} label={t("dashboard.health")} />
             <div className="min-w-[220px] flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge tone={toneForHealth(health.global)} dot>
+                <Badge tone={scoreTone(health.global)} dot>
                   {t(`dashboard.${label}`)}
                 </Badge>
                 <span className="text-[11px] text-muted">
-                  {insights.length === 0
+                  {bottlenecks.length === 0
                     ? t("dashboard.allGood")
-                    : t("dashboard.healthSummary", { count: insights.length })}
+                    : t("dashboard.healthSummary", { count: bottlenecks.length })}
                 </span>
               </div>
 
@@ -138,7 +149,7 @@ export function Dashboard() {
                     </div>
                     <Meter
                       value={subsystem.score}
-                      tone={toneForHealth(subsystem.score)}
+                      tone={scoreTone(subsystem.score)}
                       className="mt-1.5"
                       label={subsystem.label}
                     />
@@ -162,37 +173,41 @@ export function Dashboard() {
             <LiveRow
               icon={Cpu}
               label={t("dashboard.cpu")}
-              value={formatPercent(profile.cpu.usagePercent, 1)}
-              percent={profile.cpu.usagePercent}
-              tone={usageTone(profile.cpu.usagePercent)}
+              value={formatPercent(cpuPercent, 1)}
+              percent={cpuPercent}
+              tone={usageTone(cpuPercent)}
             />
             <LiveRow
               icon={MemoryStick}
               label={t("dashboard.memory")}
               value={t("dashboard.usedOf", {
-                used: formatBytes(profile.memory.usedBytes),
-                total: formatBytes(profile.memory.totalBytes),
+                used: formatBytes(memoryUsed),
+                total: formatBytes(memoryTotal),
               })}
-              percent={memoryUsed}
-              tone={usageTone(memoryUsed)}
+              percent={memoryPercent}
+              tone={usageTone(memoryPercent)}
             />
             <LiveRow
               icon={HardDrive}
               label={mainDisk?.mountPoint ?? t("dashboard.storage")}
               value={t("dashboard.free", { value: formatBytes(mainDisk?.availableBytes ?? 0) })}
-              percent={100 - diskFree}
-              tone={usageTone(100 - diskFree)}
+              percent={diskUsed}
+              tone={usageTone(diskUsed)}
             />
             <LiveRow
               icon={Network}
-              label={profile.networks[0]?.name ?? t("dashboard.network")}
-              value={formatBytes(profile.networks[0]?.receivedBytes ?? 0)}
+              label={networkName}
+              value={formatRate(latest?.networkRxBytesPerSec ?? 0)}
             />
           </div>
 
           <p className="mt-4 flex items-center gap-1.5 text-[10px] text-muted">
             <span className="size-1 rounded-full bg-accent" aria-hidden />
-            {t("dashboard.frequency")}: {formatMhz(profile.cpu.currentFrequencyMhz)}
+            {latest
+              ? `${t("dashboard.frequency")}: ${formatMhz(latest.cpuFrequencyMhz)} · ${t(
+                  "dashboard.uptime",
+                )}: ${formatDuration(latest.uptimeSeconds)}`
+              : `${t("dashboard.frequency")}: ${formatMhz(profile.cpu.currentFrequencyMhz)}`}
           </p>
         </Card>
       </div>
@@ -214,7 +229,7 @@ export function Dashboard() {
           </Link>
         </div>
 
-        {insights.length === 0 ? (
+        {bottlenecks.length === 0 ? (
           <Card className="p-6">
             <div className="flex items-center gap-3">
               <div className="grid size-10 place-items-center rounded-xl border border-ok/30 bg-ok/10 text-ok">
@@ -228,8 +243,8 @@ export function Dashboard() {
           </Card>
         ) : (
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {insights.slice(0, 3).map((insight) => (
-              <InsightCard key={insight.id} insight={insight} />
+            {bottlenecks.slice(0, 3).map((bottleneck) => (
+              <InsightCard key={bottleneckKey(bottleneck)} bottleneck={bottleneck} />
             ))}
           </div>
         )}
@@ -255,14 +270,10 @@ export function Dashboard() {
               icon={MemoryStick}
               label={t("diagnostics.memory")}
               value={formatBytes(profile.memory.totalBytes)}
-              detail={
-                profile.memory.channels
-                  ? t("diagnostics.dualChannel")
-                  : t("dashboard.usedOf", {
-                      used: formatBytes(profile.memory.usedBytes),
-                      total: formatBytes(profile.memory.totalBytes),
-                    })
-              }
+              detail={t("dashboard.usedOf", {
+                used: formatBytes(profile.memory.usedBytes),
+                total: formatBytes(profile.memory.totalBytes),
+              })}
             />
             <HardwareRow
               icon={HardDrive}
@@ -275,6 +286,12 @@ export function Dashboard() {
                     })}`
                   : t("common.unknown")
               }
+            />
+            <HardwareRow
+              icon={Activity}
+              label={t("diagnostics.gpus")}
+              value={profile.gpus[0]?.name ?? t("diagnostics.noGpu")}
+              detail={profile.gpus[0]?.vramBytes ? formatBytes(profile.gpus[0].vramBytes) : "—"}
             />
             <HardwareRow
               icon={Activity}

@@ -103,7 +103,7 @@ Open source project — no EV certificate budget.
 
 ## 🔗 Links
 
-- **Documentation** → [docs/](docs/)
+- **Code signing** → [docs/CODE_SIGNING.md](docs/CODE_SIGNING.md)
 - **Issues** → [GitHub Issues](https://github.com/02kenzz/WexoOptimizer/issues)
 - **Discussions** → [GitHub Discussions](https://github.com/02kenzz/WexoOptimizer/discussions)
 

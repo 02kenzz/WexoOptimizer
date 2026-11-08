@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { clamp, formatBytes, formatMhz, formatPercent, scoreTone } from "./utils";
+import { clamp, formatBytes, formatDuration, formatMhz, formatPercent, scoreTone } from "./utils";
 
 describe("formatBytes", () => {
   it("handles zero and invalid values", () => {
@@ -33,6 +33,24 @@ describe("formatPercent and clamp", () => {
   it("clamps values", () => {
     expect(clamp(120, 0, 100)).toBe(100);
     expect(clamp(-4, 0, 100)).toBe(0);
+  });
+});
+
+describe("formatDuration", () => {
+  it("keeps seconds for short windows", () => {
+    expect(formatDuration(23)).toBe("23s");
+    expect(formatDuration(59.9)).toBe("59s");
+  });
+
+  it("shows minutes, hours and days", () => {
+    expect(formatDuration(60)).toBe("1m");
+    expect(formatDuration(3_600)).toBe("1h 0m");
+    expect(formatDuration(90_061)).toBe("1d 1h 1m");
+  });
+
+  it("rejects empty or invalid input", () => {
+    expect(formatDuration(0)).toBe("—");
+    expect(formatDuration(Number.NaN)).toBe("—");
   });
 });
 

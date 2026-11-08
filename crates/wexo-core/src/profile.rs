@@ -10,9 +10,12 @@ pub struct SystemProfile {
     pub memory: MemoryInfo,
     pub disks: Vec<DiskInfo>,
     pub networks: Vec<NetworkInfo>,
+    pub gpus: Vec<GpuInfo>,
     pub os: OsInfo,
     #[ts(type = "number")]
     pub collected_at_ms: u64,
+    #[ts(type = "number")]
+    pub uptime_seconds: u64,
 }
 
 impl SystemProfile {
@@ -25,6 +28,7 @@ impl SystemProfile {
                 physical_cores: 0,
                 logical_cores: 0,
                 current_frequency_mhz: 0,
+                base_frequency_mhz: 0,
                 usage_percent: 0.0,
             },
             memory: MemoryInfo {
@@ -34,9 +38,12 @@ impl SystemProfile {
                 swap_total_bytes: 0,
                 swap_used_bytes: 0,
                 channels: None,
+                speed_mhz: 0,
+                module_count: 0,
             },
             disks: Vec::new(),
             networks: Vec::new(),
+            gpus: Vec::new(),
             os: OsInfo {
                 name: "Windows".into(),
                 version: String::new(),
@@ -46,6 +53,7 @@ impl SystemProfile {
                 arch: std::env::consts::ARCH.into(),
             },
             collected_at_ms: 0,
+            uptime_seconds: 0,
         }
     }
 }
@@ -60,6 +68,9 @@ pub struct CpuInfo {
     pub logical_cores: u32,
     #[ts(type = "number")]
     pub current_frequency_mhz: u64,
+    /// Nominal (non-boost) clock reported by WMI. `0` when unknown.
+    #[ts(type = "number")]
+    pub base_frequency_mhz: u64,
     pub usage_percent: f32,
 }
 
@@ -77,8 +88,12 @@ pub struct MemoryInfo {
     pub swap_total_bytes: u64,
     #[ts(type = "number")]
     pub swap_used_bytes: u64,
-    /// Number of populated memory channels, when it can be detected (WMI, M1).
+    /// Number of populated memory channels, when it can be detected (WMI).
     pub channels: Option<u8>,
+    /// Configured module speed in MHz. `0` when unknown.
+    pub speed_mhz: u32,
+    /// Number of populated DIMM slots. `0` when unknown.
+    pub module_count: u8,
 }
 
 impl MemoryInfo {
@@ -103,6 +118,20 @@ pub struct DiskInfo {
     pub available_bytes: u64,
     pub kind: DiskKind,
     pub is_removable: bool,
+    /// Bus reported by WMI/sysinfo, e.g. `"NVMe"`, `"SATA"`, `"USB"`. Empty when unknown.
+    pub bus_type: String,
+    /// SMART health status from WMI (MSStorageDriver_FailurePredictData). None when unavailable.
+    #[ts(type = "\"healthy\" | \"warning\" | \"critical\" | null")]
+    pub smart_status: Option<SmartStatus>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "lowercase")]
+#[ts(export, export_to = "../../../src/types/generated/")]
+pub enum SmartStatus {
+    Healthy,
+    Warning,
+    Critical,
 }
 
 impl DiskInfo {
@@ -140,6 +169,17 @@ pub struct NetworkInfo {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export, export_to = "../../../src/types/generated/")]
+pub struct GpuInfo {
+    pub name: String,
+    pub vendor: String,
+    pub driver_version: String,
+    #[ts(type = "number | null")]
+    pub vram_bytes: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../../src/types/generated/")]
 pub struct OsInfo {
     pub name: String,
     pub version: String,
@@ -160,6 +200,7 @@ mod tests {
         let parsed: SystemProfile = serde_json::from_str(&json).expect("deserialize");
         assert_eq!(parsed.os.name, "Windows");
         assert!(json.contains("\"collectedAtMs\""));
+        assert!(json.contains("\"gpus\""));
     }
 
     #[test]
@@ -171,6 +212,8 @@ mod tests {
             swap_total_bytes: 0,
             swap_used_bytes: 0,
             channels: None,
+            speed_mhz: 0,
+            module_count: 0,
         };
         assert_eq!(memory.used_percent(), 0.0);
 
@@ -181,6 +224,8 @@ mod tests {
             available_bytes: 0,
             kind: DiskKind::Unknown,
             is_removable: false,
+            bus_type: String::new(),
+            smart_status: None,
         };
         assert_eq!(disk.free_percent(), 0.0);
     }

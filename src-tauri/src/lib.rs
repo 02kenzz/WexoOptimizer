@@ -6,6 +6,7 @@ mod logging;
 mod state;
 
 use state::AppState;
+use tauri::Manager;
 
 /// Boots the Tauri application.
 pub fn run() {
@@ -25,15 +26,30 @@ pub fn run() {
 
     let state = AppState::new(paths, settings, log_guard);
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .manage(state)
+        .setup(|app| {
+            app.state::<AppState>().start_monitor(app.handle().clone());
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             commands::ping,
             commands::get_app_info,
             commands::get_system_profile,
+            commands::refresh_profile,
+            commands::get_live_metrics,
+            commands::get_metrics_history,
+            commands::get_monitor_interval,
+            commands::run_diagnostics,
             commands::get_settings,
             commands::save_settings,
         ])
-        .run(tauri::generate_context!())
-        .expect("failed to run Wexo Optimizer");
+        .build(tauri::generate_context!())
+        .expect("failed to build Wexo Optimizer");
+
+    app.run(|handle, event| {
+        if matches!(event, tauri::RunEvent::Exit) {
+            handle.state::<AppState>().stop_monitor();
+        }
+    });
 }

@@ -3,11 +3,32 @@
 //! Windows-specific access is isolated here so the rest of the workspace stays
 //! testable and portable.
 
-use std::sync::Mutex;
-use std::time::{SystemTime, UNIX_EPOCH};
+pub mod pdh;
+pub mod sampler;
+pub mod wmi;
+
+pub use pdh::PdhSampler;
+pub use sampler::LiveSampler;
+pub use wmi::{enrich_profile, WmiCache, WmiDisk, WmiSnapshot};
+
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use sysinfo::{Disks, Networks, System};
 use wexo_core::{CpuInfo, DiskInfo, DiskKind, MemoryInfo, NetworkInfo, OsInfo, SystemProfile};
+
+/// Minimum spacing between CPU counter reads.
+///
+/// `refresh_cpu_usage` computes a delta between two reads, so calling it twice
+/// within a few milliseconds produces meaningless values (often a spurious
+/// 100%). React StrictMode and concurrent queries do exactly that, so the last
+/// reading is reused until the interval has elapsed.
+const CPU_REFRESH_MIN: Duration = Duration::from_millis(900);
+
+struct SystemState {
+    system: System,
+    last_cpu_refresh: Option<Instant>,
+}
 
 /// A source of `SystemProfile` snapshots.
 pub trait SystemCollector: Send + Sync {
@@ -18,17 +39,34 @@ pub trait SystemCollector: Send + Sync {
 ///
 /// The inner `System` is kept alive between calls so CPU usage is computed as a
 /// delta between two samples instead of always reporting zero.
+///
+/// Static hardware details (CPU model, DIMMs, GPU, disk bus) come from a
+/// background WMI collection cached in [`WmiCache`]; the first profile may be
+/// missing them until that collection finishes.
 pub struct LiveCollector {
-    system: Mutex<System>,
+    system: Mutex<SystemState>,
+    wmi: Arc<WmiCache>,
 }
 
 impl LiveCollector {
     pub fn new() -> Self {
         let mut system = System::new_all();
         system.refresh_all();
+        let wmi = Arc::new(WmiCache::new());
+        wmi.refresh_async();
         Self {
-            system: Mutex::new(system),
+            system: Mutex::new(SystemState {
+                system,
+                last_cpu_refresh: None,
+            }),
+            wmi,
         }
+    }
+
+    /// Forces a synchronous WMI re-collection, e.g. from a "refresh hardware"
+    /// command. Blocks for a few hundred milliseconds at most.
+    pub fn refresh_hardware(&self) {
+        self.wmi.refresh_now();
     }
 }
 
@@ -40,12 +78,24 @@ impl Default for LiveCollector {
 
 impl SystemCollector for LiveCollector {
     fn profile(&self) -> SystemProfile {
-        let mut system = match self.system.lock() {
+        let mut state = match self.system.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
-        system.refresh_all();
+        // Only dynamic fields are refreshed: `refresh_all` would also walk the
+        // process list, which is far more expensive than a profile needs.
+        let now = Instant::now();
+        let cpu_due = state
+            .last_cpu_refresh
+            .map_or(true, |last| now.duration_since(last) >= CPU_REFRESH_MIN);
+        if cpu_due {
+            state.system.refresh_cpu_usage();
+            state.system.refresh_cpu_frequency();
+            state.last_cpu_refresh = Some(now);
+        }
+        state.system.refresh_memory();
 
+        let system = &state.system;
         let cpus = system.cpus();
         let first_cpu = cpus.first();
         let logical_cores = cpus.len() as u32;
@@ -64,6 +114,7 @@ impl SystemCollector for LiveCollector {
                 .max(1) as u32,
             logical_cores,
             current_frequency_mhz: first_cpu.map(|cpu| cpu.frequency()).unwrap_or(0),
+            base_frequency_mhz: 0,
             usage_percent: system.global_cpu_usage(),
         };
 
@@ -74,20 +125,29 @@ impl SystemCollector for LiveCollector {
             swap_total_bytes: system.total_swap(),
             swap_used_bytes: system.used_swap(),
             channels: None,
+            speed_mhz: 0,
+            module_count: 0,
         };
 
         let disks = collect_disks();
         let networks = collect_networks();
         let os = collect_os();
 
-        SystemProfile {
+        let mut profile = SystemProfile {
             cpu,
             memory,
             disks,
             networks,
+            gpus: Vec::new(),
             os,
             collected_at_ms: now_ms(),
+            uptime_seconds: System::uptime(),
+        };
+
+        if let Some(snapshot) = self.wmi.current() {
+            enrich_profile(&mut profile, &snapshot);
         }
+        profile
     }
 }
 
@@ -105,6 +165,8 @@ fn collect_disks() -> Vec<DiskInfo> {
                 total_bytes: disk.total_space(),
                 available_bytes: disk.available_space(),
                 is_removable: disk.is_removable(),
+                bus_type: String::new(),
+                smart_status: None,
             }
         })
         .collect()
@@ -190,6 +252,15 @@ mod tests {
         assert!(profile.cpu.logical_cores > 0);
         assert!(profile.memory.total_bytes > 0);
         assert!(profile.collected_at_ms > 0);
+    }
+
+    #[test]
+    fn consecutive_profiles_reuse_the_cpu_reading() {
+        let collector = LiveCollector::new();
+        let first = collector.profile();
+        let second = collector.profile();
+        // Two reads milliseconds apart would otherwise produce a spurious 100%.
+        assert_eq!(first.cpu.usage_percent, second.cpu.usage_percent);
     }
 
     #[test]

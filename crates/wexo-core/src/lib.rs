@@ -5,17 +5,24 @@
 
 pub mod app;
 pub mod diagnostics;
+pub mod metrics;
 pub mod optimization;
 pub mod profile;
 pub mod settings;
 
 pub use app::AppInfo;
-pub use diagnostics::{Bottleneck, BottleneckComponent, Confidence, HealthScore, Severity};
+pub use diagnostics::{
+    analyze, compute_health, Bottleneck, BottleneckComponent, BottleneckEvidence, Confidence,
+    DiagnosticReport, HealthScore, Severity, WindowSummary,
+};
+pub use metrics::{LiveMetrics, MetricWindow, Stats};
 pub use optimization::{
     Applicability, BenchmarkDelta, Category, Optimization, RiskLevel, SnapshotSpec,
     TransactionRecord, TransactionStatus, VerificationResult,
 };
-pub use profile::{CpuInfo, DiskInfo, DiskKind, MemoryInfo, NetworkInfo, OsInfo, SystemProfile};
+pub use profile::{
+    CpuInfo, DiskInfo, DiskKind, GpuInfo, MemoryInfo, NetworkInfo, OsInfo, SmartStatus, SystemProfile,
+};
 pub use settings::{AppSettings, Language, Theme, UpdateChannel};
 
 /// Version of the domain model. Bump when a breaking change lands so the

@@ -2,6 +2,14 @@
 
 export type MemoryInfo = { totalBytes: number, usedBytes: number, availableBytes: number, swapTotalBytes: number, swapUsedBytes: number, 
 /**
- * Number of populated memory channels, when it can be detected (WMI, M1).
+ * Number of populated memory channels, when it can be detected (WMI).
  */
-channels: number | null, };
+channels: number | null, 
+/**
+ * Configured module speed in MHz. `0` when unknown.
+ */
+speedMhz: number, 
+/**
+ * Number of populated DIMM slots. `0` when unknown.
+ */
+moduleCount: number, };

@@ -1,6 +1,12 @@
 //! Safety layer: preflight checks, snapshots and the transaction log.
-//!
-//! M0 ships the pure preflight decision logic; snapshot and SQLite storage land in M2.
+
+pub mod snapshot;
+pub mod transaction;
+
+pub use snapshot::{capture_snapshot, load_snapshot, list_snapshots, restore_snapshot, Snapshot, SnapshotError};
+pub use transaction::{TransactionError, TransactionLog, TransactionRecord, TransactionStatus};
+
+use wexo_core::AppSettings;
 
 pub const MIN_FREE_DISK_BYTES: u64 = 500 * 1024 * 1024;
 
@@ -37,6 +43,19 @@ impl PreflightReport {
     pub fn can_apply(&self) -> bool {
         self.blockers().is_empty()
     }
+}
+
+/// Creates the safety layer components (transaction log, snapshot dir) from settings.
+pub fn init_safety(settings: &AppSettings) -> Result<(TransactionLog, std::path::PathBuf), transaction::TransactionError> {
+    let data_dir = if let Some(custom) = &settings.data_dir {
+        std::path::PathBuf::from(custom)
+    } else {
+        dirs::data_local_dir()
+            .unwrap_or_else(|| std::env::temp_dir())
+            .join("WexoOptimizer")
+    };
+    let log = TransactionLog::new(&data_dir)?;
+    Ok((log, data_dir))
 }
 
 #[cfg(test)]

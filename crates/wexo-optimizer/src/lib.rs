@@ -1,6 +1,7 @@
 //! Optimization registry and (from M2) the atomic apply/verify/rollback engine.
-//!
-//! M0 only provides the registry primitives so the workspace shape is stable.
+
+pub mod definitions;
+pub mod engine;
 
 use std::collections::HashSet;
 
@@ -52,6 +53,9 @@ impl Registry {
             .filter(move |item| Some(item.category) == category)
     }
 }
+
+/// Re-export the executable engine and registry.
+pub use engine::{OptimizationEngine, OptimizationRegistry as ExecutableRegistry, ApplyResult, OptimizationResult, EngineError};
 
 #[cfg(test)]
 mod tests {

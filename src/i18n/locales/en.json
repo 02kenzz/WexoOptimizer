@@ -5,8 +5,8 @@
     "version": "Version {{version}}",
     "admin": "Administrator",
     "standard": "Standard user",
-    "browserMode": "Browser mode · simulated data",
-    "foundation": "M0 · Foundation"
+    "browserMode": "Browser mode · no backend",
+    "foundation": "M1 · Live monitor"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -31,7 +31,8 @@
     "confidence": "Confidence",
     "evidence": "Evidence",
     "milestone": "Available in {{milestone}}",
-    "browserHint": "Demo data. Open the desktop app to see your real hardware.",
+    "browserHint": "Open the desktop app to read real system data.",
+    "backendUnavailable": "The Wexo Optimizer backend is not available. Open the desktop app.",
     "error": "Could not load information",
     "retry": "Retry"
   },
@@ -50,6 +51,14 @@
     "low": "Low",
     "medium": "Medium",
     "high": "High"
+  },
+  "components": {
+    "cpu": "CPU",
+    "gpu": "GPU",
+    "memory": "Memory",
+    "disk": "Disk",
+    "network": "Network",
+    "system": "System"
   },
   "categories": {
     "power": "Power",
@@ -79,6 +88,7 @@
     "storage": "Storage",
     "network": "Network",
     "free": "{{value}} free",
+    "uptime": "Uptime",
     "recommendations": "Recommendations",
     "noRecommendations": "No issues detected",
     "noRecommendationsHint": "The system is behaving within expected parameters.",
@@ -111,11 +121,32 @@
     "channels": "Channels",
     "dualChannel": "Dual channel",
     "singleChannel": "Single channel",
+    "modules": "Modules",
+    "moduleCount": "{{value}} modules installed",
+    "memorySpeed": "Memory speed",
+    "cores": "Cores",
+    "baseFrequency": "Base frequency",
     "freeOf": "{{free}} free of {{total}}",
     "removable": "Removable",
     "kernel": "Kernel",
+    "build": "Build",
     "hostname": "Hostname",
     "architecture": "Architecture",
+    "uptime": "Uptime",
+    "systemDisk": "System disk",
+    "gpus": "Graphics cards",
+    "noGpu": "No GPU detected",
+    "window": "Analysis window",
+    "windowHint": "Not enough samples yet. Dynamic rules need at least 5 monitor samples.",
+    "sampleCount": "{{value}} samples",
+    "windowDuration": "Duration",
+    "cpuP50": "CPU median",
+    "cpuP95": "CPU p95",
+    "memoryP95": "Memory p95",
+    "diskBusyP95": "Disk p95",
+    "diskQueueP95": "Disk queue p95",
+    "networkRx": "Network received",
+    "networkTx": "Network sent",
     "confidence": "{{value}} confidence"
   },
   "optimizations": {
@@ -132,11 +163,24 @@
   "monitor": {
     "title": "Monitor",
     "subtitle": "CPU, GPU, RAM, disk and network in real time",
-    "placeholderTitle": "Monitor under construction",
-    "placeholderHint": "The sampling service, 60 fps charts and alerts arrive in M3.",
     "liveCpu": "Total CPU",
     "liveMemory": "Memory",
-    "liveDisk": "Free disk",
+    "liveDisk": "Disk",
+    "liveNetwork": "Network",
+    "liveSince": "Uptime {{value}}",
+    "waiting": "Waiting for the first sample…",
+    "sampleCount": "{{value}} samples",
+    "diskThroughput": "R {{read}} · W {{write}}",
+    "upload": "Upload {{value}}",
+    "chartTitle": "Live history",
+    "chartTime": "Time",
+    "chartCpu": "CPU",
+    "chartMemory": "Memory",
+    "chartDisk": "Disk",
+    "cores": "Cores ({{value}})",
+    "perCore": "Per core",
+    "core": "Core",
+    "noCores": "No per-core data",
     "sampling": "Sampling interval",
     "targets": "Target: < 1% CPU and < 50 MB RAM idle"
   },
@@ -179,33 +223,61 @@
     "tray": "Minimize to tray"
   },
   "insights": {
-    "memoryHigh": {
-      "title": "Memory at the limit",
-      "desc": "RAM usage is at {{percent}}%. Closing background apps or adding memory will improve responsiveness."
+    "rules": {
+      "memoryLowCapacity": {
+        "title": "Low memory capacity",
+        "desc": "With {{totalGb}} GB of RAM the system will fall back to the page file under demanding workloads."
+      },
+      "memorySingleChannel": {
+        "title": "Single-channel memory",
+        "desc": "{{modules}} module(s) on a single channel. Installing modules in dual channel can increase the bandwidth of {{totalGb}} GB of RAM."
+      },
+      "diskSpace": {
+        "title": "Low space on {{mount}}",
+        "desc": "Only {{freeGb}} GB free ({{freePercent}}%). Windows needs space for the page file and updates."
+      },
+      "diskHddSystem": {
+        "title": "Mechanical drive as the primary disk",
+        "desc": "{{mount}} is an HDD, which limits boot time and application loading compared to an SSD or NVMe."
+      },
+      "networkNoAdapter": {
+        "title": "No network adapter",
+        "desc": "No active network adapter was detected."
+      },
+      "cpuSustained": {
+        "title": "CPU under heavy load",
+        "desc": "Sustained CPU usage is {{cpuP95}}% (median {{cpuP50}}%) across {{samples}} samples. Review active processes in the monitor."
+      },
+      "cpuThrottle": {
+        "title": "CPU below its base frequency",
+        "desc": "The median frequency is {{frequencyMhz}} MHz versus a {{baseFrequencyMhz}} MHz base with the CPU at {{cpuP50}}%. This can be caused by thermal or power limits."
+      },
+      "memoryPressure": {
+        "title": "Memory pressure",
+        "desc": "RAM usage reaches {{usedPercent}}% with only {{availableGb}} GB available. Closing background apps or adding memory will improve responsiveness."
+      },
+      "diskSaturated": {
+        "title": "Disk saturated",
+        "desc": "The disk is busy {{busyP95}}% of the time with a queue of {{queueP95}} across {{samples}} samples. Check which processes are writing to disk."
+      }
     },
-    "ramLow": {
-      "title": "Low memory capacity",
-      "desc": "With {{total}} of RAM the system will fall back to the page file under demanding workloads."
-    },
-    "singleChannel": {
-      "title": "Single-channel memory",
-      "desc": "Only one memory channel was detected. Installing modules in dual channel can increase available bandwidth."
-    },
-    "diskLow": {
-      "title": "Low space on {{mount}}",
-      "desc": "Only {{free}} free ({{percent}}%). Windows needs space for the page file and updates."
-    },
-    "hddSystem": {
-      "title": "Mechanical drive detected",
-      "desc": "An HDD as the primary drive limits boot time and application loading compared to an SSD or NVMe."
-    },
-    "noNvme": {
-      "title": "No NVMe detected",
-      "desc": "No NVMe drive was detected. If your board supports it, it is the most cost-effective storage upgrade."
-    },
-    "cpuHigh": {
-      "title": "CPU under heavy load",
-      "desc": "Sustained CPU usage is at {{percent}}%. Review active processes in the monitor."
+    "evidence": {
+      "totalGb": "{{value}} GB RAM",
+      "modules": "{{value}} module(s)",
+      "mount": "{{value}}",
+      "freeGb": "{{value}} GB free",
+      "freePercent": "{{value}}% free",
+      "cpuP95": "CPU p95 {{value}}%",
+      "cpuP50": "CPU median {{value}}%",
+      "samples": "{{value}} samples",
+      "windowSec": "{{value}} s window",
+      "frequencyMhz": "{{value}} MHz",
+      "baseFrequencyMhz": "Base {{value}} MHz",
+      "usedPercent": "RAM p95 {{value}}%",
+      "availableGb": "{{value}} GB available",
+      "swapPercent": "Swap {{value}}%",
+      "busyP95": "Disk p95 {{value}}%",
+      "queueP95": "Queue p95 {{value}}"
     }
   }
 }

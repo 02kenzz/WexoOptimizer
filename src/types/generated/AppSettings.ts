@@ -14,4 +14,8 @@ monitorIntervalMs: number, minimizeToTray: boolean, updateChannel: UpdateChannel
 /**
  * Opt-in telemetry. Off by default, always.
  */
-telemetryEnabled: boolean, };
+telemetryEnabled: boolean, 
+/**
+ * Custom data directory for snapshots and transaction log. None = use default.
+ */
+dataDir: string | null, };

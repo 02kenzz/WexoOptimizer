@@ -19,7 +19,8 @@
         "minWidth": 1040,
         "minHeight": 700,
         "center": true,
-        "theme": "Dark"
+        "theme": "Dark",
+        "additionalBrowserArgs": "--remote-debugging-port=9222"
       }
     ],
     "security": {

@@ -36,6 +36,30 @@ export function formatPercent(value: number, fractionDigits = 0): string {
   return `${value.toFixed(fractionDigits)}%`;
 }
 
+/** Formats a throughput in bytes per second, e.g. `"1.2 MB/s"`. */
+export function formatRate(bytesPerSecond: number): string {
+  if (!Number.isFinite(bytesPerSecond) || bytesPerSecond < 0) {
+    return "—";
+  }
+  return `${formatBytes(bytesPerSecond)}/s`;
+}
+
+/** Formats an uptime in seconds as `Xd Yh Zm`, `Yh Zm`, `Zm` or `Ns`. */
+export function formatDuration(totalSeconds: number): string {
+  if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) {
+    return "—";
+  }
+  const seconds = Math.floor(totalSeconds);
+  const days = Math.floor(seconds / 86_400);
+  const hours = Math.floor((seconds % 86_400) / 3_600);
+  const minutes = Math.floor((seconds % 3_600) / 60);
+
+  if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m`;
+  return `${seconds}s`;
+}
+
 export function formatNumber(value: number): string {
   return new Intl.NumberFormat("es-ES").format(value);
 }
@@ -45,4 +69,12 @@ export function scoreTone(score: number): "ok" | "warn" | "danger" {
   if (score >= 75) return "ok";
   if (score >= 50) return "warn";
   return "danger";
+}
+
+/** Qualitative label for the global health score, translated by the caller. */
+export function healthLabel(score: number): "excellent" | "good" | "fair" | "poor" {
+  if (score >= 85) return "excellent";
+  if (score >= 70) return "good";
+  if (score >= 50) return "fair";
+  return "poor";
 }

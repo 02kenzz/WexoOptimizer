@@ -1,24 +1,52 @@
-import { Activity, Cpu, HardDrive, LineChart, MemoryStick, Timer } from "lucide-react";
+import {
+  Activity,
+  Cpu,
+  Gauge,
+  HardDrive,
+  MemoryStick,
+  Network,
+  RefreshCw,
+  Timer,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { LiveChart } from "@/components/LiveChart";
 import { Badge } from "@/components/ui/Badge";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Meter } from "@/components/ui/Meter";
-import { useSystemProfile } from "@/hooks/useSystemProfile";
+import { useLiveMetrics } from "@/hooks/useLiveMetrics";
 import { usageTone } from "@/lib/tone";
-import { formatBytes, formatPercent } from "@/lib/utils";
+import {
+  clamp,
+  cn,
+  formatBytes,
+  formatDuration,
+  formatMhz,
+  formatPercent,
+  formatRate,
+} from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
+
+const CORE_TONE: Record<"accent" | "warn" | "danger", string> = {
+  accent: "bg-accent",
+  warn: "bg-warn",
+  danger: "bg-danger",
+};
 
 function LiveTile({
   icon: Icon,
   label,
   value,
   percent,
+  hint,
 }: {
   icon: typeof Cpu;
   label: string;
   value: string;
   percent?: number;
+  hint?: string;
 }) {
   return (
     <Card className="p-4">
@@ -30,6 +58,7 @@ function LiveTile({
         <span className="size-1.5 rounded-full bg-ok animate-pulse-soft" aria-hidden />
       </div>
       <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">{value}</p>
+      {hint ? <p className="mt-0.5 truncate text-[11px] text-muted">{hint}</p> : null}
       {percent !== undefined ? (
         <Meter value={percent} tone={usageTone(percent)} className="mt-3" />
       ) : null}
@@ -37,77 +66,162 @@ function LiveTile({
   );
 }
 
+function CoreGrid({ values }: { values: number[] }) {
+  const { t } = useTranslation();
+
+  if (values.length === 0) {
+    return <p className="py-6 text-center text-xs text-muted">{t("monitor.noCores")}</p>;
+  }
+
+  return (
+    <div className="grid grid-cols-8 gap-1.5 sm:grid-cols-12 lg:grid-cols-16">
+      {values.map((value, index) => {
+        const percent = clamp(value, 0, 100);
+        return (
+          <div
+            key={index.toString()}
+            className="flex h-14 items-end overflow-hidden rounded-sm bg-panel-2/70"
+            title={`${t("monitor.core")} ${index + 1}: ${formatPercent(percent, 0)}`}
+          >
+            <div
+              className={cn("w-full rounded-sm transition-[height]", CORE_TONE[usageTone(percent)])}
+              style={{ height: `${percent}%` }}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function Monitor() {
   const { t } = useTranslation();
   const interval = useAppStore((state) => state.settings.monitorIntervalMs);
-  const { data: profile } = useSystemProfile(Math.max(1500, interval));
+  const { samples, latest, loading, error } = useLiveMetrics();
 
-  const memoryPercent = profile?.memory.totalBytes
-    ? (profile.memory.usedBytes / profile.memory.totalBytes) * 100
-    : 0;
-  const mainDisk = profile?.disks.find((disk) => disk.mountPoint.toUpperCase().startsWith("C:"));
-  const diskUsed = mainDisk?.totalBytes
-    ? 100 - (mainDisk.availableBytes / mainDisk.totalBytes) * 100
-    : 0;
+  if (loading && !latest) {
+    return <Card className="h-72 animate-pulse bg-panel-2/40" />;
+  }
+
+  if (error && !latest) {
+    return (
+      <EmptyState
+        icon={Activity}
+        title={t("common.error")}
+        description={t("common.backendUnavailable")}
+        action={
+          <Button size="sm" onClick={() => window.location.reload()}>
+            <RefreshCw className="size-3.5" aria-hidden />
+            {t("common.retry")}
+          </Button>
+        }
+      />
+    );
+  }
+
+  const diskBusy = latest?.diskBusyPercent ?? null;
+  const memoryPercent = latest?.memoryPercent ?? 0;
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-panel/60 px-4 py-3">
+        <div className="flex items-center gap-2 text-xs text-muted">
+          <span className="size-1.5 rounded-full bg-ok animate-pulse-soft" aria-hidden />
+          {latest
+            ? t("monitor.liveSince", { value: formatDuration(latest.uptimeSeconds) })
+            : t("monitor.waiting")}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone="muted">{t("monitor.sampleCount", { value: samples.length })}</Badge>
+          <Badge tone="accent">
+            <Timer className="size-3" aria-hidden />
+            {interval} ms
+          </Badge>
+        </div>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <LiveTile
           icon={Cpu}
           label={t("monitor.liveCpu")}
-          value={formatPercent(profile?.cpu.usagePercent ?? 0, 1)}
-          percent={profile?.cpu.usagePercent ?? 0}
+          value={formatPercent(latest?.cpuPercent ?? 0, 1)}
+          percent={latest?.cpuPercent ?? 0}
+          hint={latest ? formatMhz(latest.cpuFrequencyMhz) : undefined}
         />
         <LiveTile
           icon={MemoryStick}
           label={t("monitor.liveMemory")}
           value={formatPercent(memoryPercent, 0)}
           percent={memoryPercent}
+          hint={
+            latest
+              ? t("dashboard.usedOf", {
+                  used: formatBytes(latest.memoryUsedBytes),
+                  total: formatBytes(latest.memoryTotalBytes),
+                })
+              : undefined
+          }
         />
         <LiveTile
           icon={HardDrive}
           label={t("monitor.liveDisk")}
-          value={formatBytes(mainDisk?.availableBytes ?? 0)}
-          percent={diskUsed}
+          value={diskBusy === null ? t("common.unknown") : formatPercent(diskBusy, 1)}
+          percent={diskBusy ?? undefined}
+          hint={
+            latest
+              ? t("monitor.diskThroughput", {
+                  read: formatRate(latest.diskReadBytesPerSec),
+                  write: formatRate(latest.diskWriteBytesPerSec),
+                })
+              : undefined
+          }
         />
-        <LiveTile icon={Timer} label={t("monitor.sampling")} value={`${interval} ms`} />
+        <LiveTile
+          icon={Network}
+          label={t("monitor.liveNetwork")}
+          value={formatRate(latest?.networkRxBytesPerSec ?? 0)}
+          hint={t("monitor.upload", { value: formatRate(latest?.networkTxBytesPerSec ?? 0) })}
+        />
       </div>
-
-      <Card className="relative overflow-hidden">
-        <div className="grid-backdrop absolute inset-0 opacity-30" aria-hidden />
-        <div className="relative flex flex-col items-center justify-center px-6 py-24 text-center">
-          <div className="grid size-14 place-items-center rounded-2xl border border-accent/30 bg-accent-soft text-accent">
-            <LineChart className="size-6" strokeWidth={1.8} aria-hidden />
-          </div>
-          <h2 className="mt-4 text-sm font-semibold">{t("monitor.placeholderTitle")}</h2>
-          <p className="mt-1.5 max-w-md text-xs leading-relaxed text-muted">
-            {t("monitor.placeholderHint")}
-          </p>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <Badge tone="accent">{t("common.milestone", { milestone: "M3" })}</Badge>
-            <Badge tone="muted">{t("monitor.targets")}</Badge>
-          </div>
-        </div>
-      </Card>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Activity className="size-4 text-accent" aria-hidden />
-            {t("monitor.subtitle")}
+            {t("monitor.chartTitle")}
           </CardTitle>
-          <Badge tone="muted">uPlot · 60 fps</Badge>
+          <div className="flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-wider text-muted">
+            <LegendDot color="var(--accent)" label={t("monitor.chartCpu")} />
+            <LegendDot color="var(--accent-2)" label={t("monitor.chartMemory")} />
+            <LegendDot color="var(--warn)" label={t("monitor.chartDisk")} />
+          </div>
         </CardHeader>
-        <div className="grid grid-cols-12 items-end gap-1 px-5 pb-4" aria-hidden>
-          {Array.from({ length: 48 }).map((_, index) => {
-            const height = 12 + Math.round(28 * Math.abs(Math.sin(index / 3.1)));
-            return (
-              <div key={index.toString()} className="rounded-sm bg-accent/25" style={{ height }} />
-            );
-          })}
-        </div>
+        <CardContent className="pb-4">
+          <LiveChart samples={samples} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Gauge className="size-4 text-accent" aria-hidden />
+            {t("monitor.cores", { value: latest?.perCorePercent.length ?? 0 })}
+          </CardTitle>
+          <Badge tone="muted">{t("monitor.perCore")}</Badge>
+        </CardHeader>
+        <CardContent className="pb-5">
+          <CoreGrid values={latest?.perCorePercent ?? []} />
+        </CardContent>
       </Card>
     </div>
+  );
+}
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className="size-1.5 rounded-full" style={{ backgroundColor: color }} aria-hidden />
+      {label}
+    </span>
   );
 }
