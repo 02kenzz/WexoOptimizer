@@ -60,16 +60,16 @@ jobs:
       # 7. Firmamos el .exe del instalador NSIS (requiere certificado en Secrets)
       - name: Sign installer
         if: env.CERT_PFX_BASE64 != ''
-        uses: microsoft/signtool@v1
-        with:
-          cert: ${{ secrets.CERT_PFX_BASE64 }}
-          pwd: ${{ secrets.CERT_PASSWORD }}
-          files: |
-            src-tauri/target/release/bundle/nsis/*.exe
-          timestamp: http://timestamp.sectigo.com
-          # Opcional: description / description-url para que salga en UAC
-          # description: "Wexo Optimizer"
-          # description-url: "https://github.com/${{ github.repository }}"
+        shell: powershell
+        run: |
+          $certPath = "$env:TEMP\cert.pfx"
+          [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String("${{ secrets.CERT_PFX_BASE64 }}"))
+          $signtool = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\signtool.exe"
+          if (-not (Test-Path $signtool)) {
+            $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter "signtool.exe" | Select-Object -First 1 -ExpandProperty FullName
+          }
+          & $signtool sign /f $certPath /p "${{ secrets.CERT_PASSWORD }}" /tr http://timestamp.sectigo.com /td sha256 /fd sha256 "src-tauri/target/release/bundle/nsis/*.exe"
+          Remove-Item $certPath -Force
 
       # 8. Subimos artefactos (por si falla la release)
       - name: Upload artifacts
