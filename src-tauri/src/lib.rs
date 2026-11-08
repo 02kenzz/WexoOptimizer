@@ -69,6 +69,10 @@ pub fn run() {
             commands::save_settings,
             commands::show_window,
             commands::hide_window,
+            commands::get_optimizations,
+            commands::apply_optimizations,
+            commands::get_transaction_history,
+            commands::rollback_transaction,
         ])
         .build(tauri::generate_context!())
         .expect("failed to build Wexo Optimizer");

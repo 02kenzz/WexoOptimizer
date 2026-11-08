@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use tauri::{Manager, State};
-use wexo_core::{AppInfo, AppSettings, DiagnosticReport, LiveMetrics, SystemProfile};
+use wexo_core::{AppInfo, AppSettings, DiagnosticReport, LiveMetrics, Optimization, SystemProfile, VerificationResult};
 use wexo_sysinfo::SystemCollector;
 
 use crate::config;
@@ -105,4 +105,92 @@ pub fn show_window(app: tauri::AppHandle) -> Result<(), String> {
 pub fn hide_window(app: tauri::AppHandle) -> Result<(), String> {
     let window = app.get_webview_window("main").ok_or("main window not found")?;
     window.hide().map_err(|e| e.to_string())
+}
+
+/// Returns all known optimizations with their availability evaluated.
+#[tauri::command]
+pub fn get_optimizations(state: State<'_, AppState>) -> Vec<Optimization> {
+    let engine = state.engine.lock().unwrap();
+    engine.registry().iter().map(|def| def.meta.clone()).collect()
+}
+
+/// Applies selected optimizations atomically with safety checks.
+#[tauri::command]
+pub fn apply_optimizations(
+    state: State<'_, AppState>,
+    optimization_ids: Vec<String>,
+    dry_run: bool,
+) -> Result<ApplyResultResponse, String> {
+    let engine = state.engine.lock().unwrap();
+    let result = engine.apply(&optimization_ids, dry_run).map_err(|e| e.to_string())?;
+
+    let results: Vec<OptimizationResultResponse> = result
+        .results
+        .into_iter()
+        .map(|r| OptimizationResultResponse {
+            optimization_id: r.optimization_id,
+            applied: r.applied,
+            verification: r.verification,
+            message: r.message,
+            benchmark_delta: r.benchmark_delta,
+        })
+        .collect();
+
+    Ok(ApplyResultResponse {
+        transaction_id: result.transaction.id,
+        results,
+    })
+}
+
+/// Returns transaction history.
+#[tauri::command]
+pub fn get_transaction_history(state: State<'_, AppState>, limit: usize) -> Vec<TransactionRecordResponse> {
+    let engine = state.engine.lock().unwrap();
+    engine.history(limit)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|t| TransactionRecordResponse {
+            id: t.id,
+            timestamp_ms: t.timestamp_ms,
+            optimization_ids: t.optimization_ids,
+            status: t.status,
+            rollback_available: t.rollback_available,
+            snapshot_id: t.snapshot_id,
+            message: t.message,
+        })
+        .collect()
+}
+
+/// Rolls back a specific transaction.
+#[tauri::command]
+pub fn rollback_transaction(state: State<'_, AppState>, transaction_id: String) -> Result<(), String> {
+    let engine = state.engine.lock().unwrap();
+    engine.rollback_transaction(&transaction_id).map_err(|e| e.to_string())
+}
+
+/// Response types for Tauri commands (serializable).
+#[derive(serde::Serialize)]
+pub struct ApplyResultResponse {
+    pub transaction_id: String,
+    pub results: Vec<OptimizationResultResponse>,
+}
+
+#[derive(serde::Serialize)]
+pub struct OptimizationResultResponse {
+    pub optimization_id: String,
+    pub applied: bool,
+    pub verification: VerificationResult,
+    pub message: Option<String>,
+    pub benchmark_delta: Option<wexo_core::BenchmarkDelta>,
+}
+
+#[derive(serde::Serialize)]
+pub struct TransactionRecordResponse {
+    pub id: String,
+    pub timestamp_ms: u64,
+    pub optimization_ids: Vec<String>,
+    pub status: wexo_safety::TransactionStatus,
+    pub rollback_available: bool,
+    pub snapshot_id: Option<String>,
+    pub message: Option<String>,
 }

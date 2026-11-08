@@ -1,10 +1,12 @@
-use std::sync::{Mutex, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::Duration;
 
 use tauri::{AppHandle, Emitter};
 use tracing_appender::non_blocking::WorkerGuard;
 use wexo_core::{AppSettings, LiveMetrics};
 use wexo_monitor::{MetricSource, MonitorHandle, DEFAULT_HISTORY_CAPACITY};
+use wexo_optimizer::OptimizationEngine;
+use wexo_safety::init_safety;
 use wexo_sysinfo::{LiveCollector, LiveSampler};
 
 use crate::config::AppPaths;
@@ -28,17 +30,24 @@ pub struct AppState {
     /// Running monitor thread. `None` until the Tauri setup hook starts it,
     /// and again after shutdown.
     monitor: Mutex<Option<MonitorHandle>>,
+    /// Optimization engine with safety layer.
+    pub engine: Arc<Mutex<OptimizationEngine>>,
     // Kept alive for the whole process so buffered log lines are flushed on exit.
     _log_guard: Mutex<Option<WorkerGuard>>,
 }
 
 impl AppState {
     pub fn new(paths: AppPaths, settings: AppSettings, log_guard: Option<WorkerGuard>) -> Self {
+        let (transaction_log, _data_dir) = init_safety(&settings)
+            .expect("failed to initialize safety layer");
+        let engine = OptimizationEngine::new(transaction_log);
+
         Self {
             paths,
             settings: RwLock::new(settings),
             collector: LiveCollector::new(),
             monitor: Mutex::new(None),
+            engine: Arc::new(Mutex::new(engine)),
             _log_guard: Mutex::new(log_guard),
         }
     }
