@@ -1,4 +1,27 @@
-import type { AppInfo, AppSettings, DiagnosticReport, LiveMetrics, SystemProfile } from "@/types";
+import type { AppInfo, AppSettings, DiagnosticReport, LiveMetrics, SystemProfile, Optimization, VerificationResult, BenchmarkDelta, TransactionStatus } from "@/types";
+
+export interface OptimizationResult {
+  optimization_id: string;
+  applied: boolean;
+  verification: VerificationResult;
+  message?: string;
+  benchmark_delta?: BenchmarkDelta;
+}
+
+export interface ApplyResult {
+  transaction_id: string;
+  results: OptimizationResult[];
+}
+
+export interface TransactionRecord {
+  id: string;
+  timestamp_ms: number;
+  optimization_ids: string[];
+  status: TransactionStatus;
+  rollback_available: boolean;
+  snapshot_id?: string;
+  message?: string;
+}
 
 /**
  * True when running inside the Tauri webview. In a plain browser (`npm run dev`)
@@ -107,6 +130,22 @@ export const ipc = {
     }
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     return Promise.resolve(settings);
+  },
+
+  getOptimizations(): Promise<Optimization[]> {
+    return isDesktop ? invoke("get_optimizations") : backendUnavailable();
+  },
+
+  applyOptimizations(optimization_ids: string[], dry_run: boolean): Promise<ApplyResult> {
+    return isDesktop ? invoke("apply_optimizations", { optimization_ids, dry_run }) : backendUnavailable();
+  },
+
+  getTransactionHistory(limit: number): Promise<TransactionRecord[]> {
+    return isDesktop ? invoke("get_transaction_history", { limit }) : backendUnavailable();
+  },
+
+  rollbackTransaction(transaction_id: string): Promise<void> {
+    return isDesktop ? invoke("rollback_transaction", { transaction_id }) : backendUnavailable();
   },
 };
 

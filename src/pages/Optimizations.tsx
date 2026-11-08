@@ -1,5 +1,5 @@
-import { ChevronDown, Circle, CircleCheck, Info, Sparkles, Wand2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ChevronDown, Circle, CircleCheck, Info, Sparkles, Wand2, AlertCircle, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/Badge";
@@ -9,7 +9,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { sampleOptimizations } from "@/data/optimizations";
 import { riskTone } from "@/lib/tone";
 import { cn } from "@/lib/utils";
-import type { Category } from "@/types";
+import { ipc } from "@/lib/ipc";
+import type { Category, Optimization } from "@/types";
 
 type Filter = "all" | Category;
 
@@ -18,19 +19,32 @@ export function Optimizations() {
   const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [optimizations, setOptimizations] = useState<Optimization[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [applying, setApplying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    ipc.getOptimizations()
+      .then((opts) => mounted && setOptimizations(opts))
+      .catch((e) => mounted && setError(e.message))
+      .finally(() => mounted && setLoading(false));
+    return () => { mounted = false; };
+  }, []);
 
   const categories = useMemo(
     () =>
-      ["all", ...Array.from(new Set(sampleOptimizations.map((item) => item.category)))] as Filter[],
-    [],
+      ["all", ...Array.from(new Set(optimizations.map((item) => item.category)))] as Filter[],
+    [optimizations],
   );
 
   const visible = useMemo(
     () =>
       filter === "all"
-        ? sampleOptimizations
-        : sampleOptimizations.filter((item) => item.category === filter),
-    [filter],
+        ? optimizations
+        : optimizations.filter((item) => item.category === filter),
+    [filter, optimizations],
   );
 
   function toggleSelected(id: string) {
@@ -40,6 +54,42 @@ export function Optimizations() {
       else next.add(id);
       return next;
     });
+  }
+
+  async function handleApply() {
+    if (selected.size === 0 || applying) return;
+    setApplying(true);
+    setError(null);
+    try {
+      await ipc.applyOptimizations(Array.from(selected), false);
+      setSelected(new Set());
+      setExpanded(null);
+      // Refresh optimizations to update availability
+      const opts = await ipc.getOptimizations();
+      setOptimizations(opts);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setApplying(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="size-8 animate-spin text-accent" aria-hidden />
+        <span className="ml-3 text-muted">{t("common.loading")}</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-warn bg-warn/10 border border-warn/20 rounded-xl p-3">
+        <AlertCircle className="size-4 shrink-0" aria-hidden />
+        <span>{error}</span>
+      </div>
+    );
   }
 
   return (
@@ -52,12 +102,21 @@ export function Optimizations() {
         <Button
           variant="primary"
           size="sm"
-          disabled
-          title={t("common.milestone", { milestone: "M2" })}
+          disabled={selected.size === 0 || applying}
+          onClick={handleApply}
         >
-          <Wand2 className="size-3.5" aria-hidden />
-          {t("common.applySelected")}
-          {selected.size > 0 ? ` (${selected.size})` : ""}
+          {applying ? (
+            <>
+              <Loader2 className="size-3.5 animate-spin" aria-hidden />
+              {t("common.applying")}
+            </>
+          ) : (
+            <>
+              <Wand2 className="size-3.5" aria-hidden />
+              {t("common.applySelected")}
+              {selected.size > 0 ? ` (${selected.size})` : ""}
+            </>
+          )}
         </Button>
       </div>
 
@@ -78,7 +137,7 @@ export function Optimizations() {
           </button>
         ))}
         <span className="ml-auto text-[11px] text-muted">
-          {visible.length} / {sampleOptimizations.length}
+          {visible.length} / {optimizations.length}
         </span>
       </div>
 
