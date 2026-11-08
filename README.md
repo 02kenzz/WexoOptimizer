@@ -1,70 +1,114 @@
-# Wexo Optimizer
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/icon.png">
+    <img alt="Wexo Optimizer" src="assets/icon.png" width="128">
+  </picture>
+</p>
 
-Centro de control para Windows que diagnostica, optimiza y monitoriza el sistema
-de forma segura y medible: cada cambio es atómico, reversible y verificable.
+<h1 align="center">Wexo Optimizer</h1>
 
-> Estado: **M0 · Foundation**. El shell de la aplicación funciona (Tauri v2 + React),
-> con diagnóstico básico de hardware en vivo. El motor de optimizaciones llega en M2.
+<p align="center">
+  <strong>Windows system control center — diagnose, optimize, monitor.</strong><br>
+  Every change is atomic, reversible, and verifiable.
+</p>
 
-## Stack
+<p align="center">
+  <a href="https://github.com/02kenzz/WexoOptimizer/releases/latest"><img alt="Latest Release" src="https://img.shields.io/github/v/release/02kenzz/WexoOptimizer?style=flat&color=5C6BC0&label=Release"></a>
+  <a href="https://github.com/02kenzz/WexoOptimizer/actions/workflows/ci.yml"><img alt="CI Status" src="https://img.shields.io/github/actions/workflow/status/02kenzz/WexoOptimizer/ci.yml?branch=master&style=flat&label=CI"></a>
+  <a href="https://github.com/02kenzz/WexoOptimizer/blob/master/LICENSE"><img alt="License" src="https://img.shields.io/github/license/02kenzz/WexoOptimizer?style=flat&color=5C6BC0"></a>
+  <a href="https://discord.gg/"><img alt="Discord" src="https://img.shields.io/discord/123456789?style=flat&color=5865F2&label=Discord&logo=discord&logoColor=white"></a>
+</p>
 
-| Capa | Tecnología |
-|------|------------|
-| Shell | Tauri v2 (WebView2) |
-| Backend | Rust (workspace de crates) |
-| Frontend | React 18 + TypeScript + Vite |
-| Estilos | Tailwind CSS 4 + tokens CSS (dark/light/high-contrast) |
-| Estado | Zustand + TanStack Query |
-| IPC | Tauri commands tipados con `ts-rs` |
-| Tests | Vitest + Testing Library · `cargo test` |
+---
 
-## Requisitos
+## 🎯 What it does
 
-- Node 20+ (probado con 24) y npm
-- Rust stable con el toolchain MSVC
-- WebView2 Runtime (incluido en Windows 11)
-- Visual Studio Build Tools con "Desktop development with C++"
+| Feature | Description |
+|---------|-------------|
+| **Diagnose** | Live hardware telemetry — CPU, GPU, memory, disks, network, thermals |
+| **Optimize** | One-click toggles for services, power plans, telemetry, visual effects, startup |
+| **Monitor** | Circular buffers, bottleneck detection, historical trends |
+| **Safety** | Snapshots before every change, SQLite transaction log, one-click rollback |
 
-## Desarrollo
+> **Status: M0 · Foundation** — Shell works (Tauri v2 + React), live hardware diagnostics running. Optimization engine (M2) in progress.
+
+---
+
+## ✨ Quick start
+
+### Install (Windows 10/11)
+
+```powershell
+# Download latest .exe from Releases
+irm "https://github.com/02kenzz/WexoOptimizer/releases/latest/download/Wexo.Optimizer_0.1.0_x64-setup.exe" -OutFile "$env:TEMP\wexo-setup.exe"
+Start-Process "$env:TEMP\wexo-setup.exe" -Wait
+```
+
+> **SmartScreen warning?** The installer is unsigned (open source, no cert budget). Click *More info → Run anyway*. [Why?](https://github.com/02kenzz/WexoOptimizer#code-signing)
+
+### Build from source
 
 ```bash
+# Prerequisites: Node 20+, Rust stable (MSVC), VS Build Tools (C++ desktop)
+git clone https://github.com/02kenzz/WexoOptimizer
+cd WexoOptimizer
 npm install
-npm run tauri dev      # app de escritorio con backend Rust
-npm run dev            # solo frontend (datos simulados en el navegador)
+npm run tauri dev        # Dev app with Rust backend
+# or
+npm run dev              # Frontend only (mocked data)
 ```
 
-## Scripts
+---
 
-| Comando | Descripción |
-|---------|-------------|
-| `npm run dev` | Vite en `localhost:1420` |
-| `npm run build` | Build de producción del frontend |
-| `npm run typecheck` | TypeScript sin emitir |
-| `npm test` | Vitest (una pasada) |
-| `npm run lint` | Biome |
-| `npm run bindings` | Regenera los tipos TS desde Rust |
-| `npm run tauri build` | Instaladores MSIX/NSIS (M5) |
-
-## Estructura
+## 🏗 Architecture
 
 ```
-crates/wexo-core       Tipos de dominio puros + lógica testeable (sin Windows)
-crates/wexo-sysinfo    Colectores de hardware/OS (sysinfo, WMI en M1)
-crates/wexo-optimizer  Registro de optimizaciones y motor apply/rollback (M2)
-crates/wexo-safety     Preflight, snapshots y transaction log (M2)
-crates/wexo-rules      Motor de reglas y recomendaciones (M4)
-crates/wexo-monitor    Muestreo y buffer circular de métricas (M3)
-src-tauri              Shell Tauri, commands, config, logging
-src/                   Frontend React
-docs/superpowers       Spec y plan de implementación
+crates/wexo-core       Pure domain types (no Windows deps) — testable logic
+crates/wexo-sysinfo    Hardware/OS collectors (sysinfo, WMI, PDH)
+crates/wexo-optimizer  Optimization registry + atomic apply/verify/rollback engine
+crates/wexo-safety     Preflight checks, registry/service/file snapshots, SQLite txn log
+crates/wexo-rules      Rules engine → recommendations (planned M4)
+crates/wexo-monitor    Metrics sampling, circular buffers, bottleneck detection (planned M3)
+src-tauri              Tauri shell, commands, state, logging
+src/                   React 18 + TypeScript + Vite + Tailwind 4
 ```
 
-## Documentación
+**Stack:** Tauri v2 · Rust workspace · React 18 · TypeScript · Tailwind CSS 4 · Zustand · TanStack Query · `ts-rs` for typed IPC · Vitest · `cargo test`
 
-- [Diseño](docs/superpowers/specs/2026-11-07-wexo-optimizer-design.md)
-- [Plan de implementación](docs/superpowers/plans/2026-11-07-wexo-optimizer-implementation-plan.md)
+---
 
-## Privacidad
+## 🔐 Code signing
 
-Sin telemetría por defecto. Sin conexiones de red ocultas. Todo se guarda en
-`%LOCALAPPDATA%\WexoOptimizer`.
+Open source project — no EV certificate budget.
+
+| Option | Status |
+|--------|--------|
+| **Unsigned (current)** | Works, shows SmartScreen warning |
+| **SignPath.io** | Free for FOSS — planned |
+| **Self-signed** | Internal testing only |
+
+[Details →](docs/CODE_SIGNING.md)
+
+---
+
+## 📦 Releases
+
+| Channel | Link |
+|---------|------|
+| **Stable** | [Latest release](https://github.com/02kenzz/WexoOptimizer/releases/latest) |
+| **All versions** | [Releases page](https://github.com/02kenzz/WexoOptimizer/releases) |
+| **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
+
+---
+
+## 🔗 Links
+
+- **Documentation** → [docs/](docs/)
+- **Issues** → [GitHub Issues](https://github.com/02kenzz/WexoOptimizer/issues)
+- **Discussions** → [GitHub Discussions](https://github.com/02kenzz/WexoOptimizer/discussions)
+
+---
+
+## 📄 License
+
+MIT © 2026 [02kenzz](https://github.com/02kenzz)

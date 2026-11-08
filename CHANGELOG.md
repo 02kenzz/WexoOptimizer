@@ -1,0 +1,48 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Added
+- Optimization engine core (`wexo-optimizer` crate)
+- Safety layer: snapshots + transaction log (`wexo-safety` crate)
+- 8 built-in optimizations (services, power, telemetry, visual effects, startup, NTFS, TCP, HAGS)
+- Rules engine framework (`wexo-rules` crate)
+- GPU info collection via WMI
+- SMART disk health monitoring
+
+### Changed
+- Tauri v2 migration
+- Workspace restructure into modular crates
+
+### Fixed
+- `wexo-safety` compilation (winreg 0.11 API)
+
+## [0.1.1] - 2026-11-08
+
+### Added
+- GitHub Actions release workflow (build → artifact → GitHub Release)
+- NSIS installer generation
+- Professional README with badges, quick start, architecture diagram
+
+### Fixed
+- Installer path in release workflow (`target/` vs `src-tauri/target/`)
+
+## [0.1.0] - 2026-11-08
+
+### Added
+- Initial project structure
+- Tauri v2 + React + TypeScript frontend
+- Rust workspace with 6 crates
+- Live hardware diagnostics (CPU, memory, disks, network)
+- CI workflow (fmt, clippy, test, typecheck, lint)
+
+---
+
+[Unreleased]: https://github.com/02kenzz/WexoOptimizer/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/02kenzz/WexoOptimizer/releases/tag/v0.1.1
+[0.1.0]: https://github.com/02kenzz/WexoOptimizer/releases/tag/v0.1.0
