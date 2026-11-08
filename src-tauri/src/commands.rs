@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use tauri::State;
+use tauri::{Manager, State};
 use wexo_core::{AppInfo, AppSettings, DiagnosticReport, LiveMetrics, SystemProfile};
 use wexo_sysinfo::SystemCollector;
 
@@ -87,4 +87,22 @@ pub fn save_settings(
 
     tracing::info!(?settings, "settings updated");
     Ok(settings)
+}
+
+/// Shows the main window (e.g., from tray click).
+#[tauri::command]
+pub fn show_window(app: tauri::AppHandle) -> Result<(), String> {
+    app.get_webview_window("main")
+        .map(|w| {
+            let _ = w.show();
+            let _ = w.set_focus();
+        })
+        .ok_or_else(|| "main window not found".to_string())
+}
+
+/// Hides the main window to tray.
+#[tauri::command]
+pub fn hide_window(app: tauri::AppHandle) -> Result<(), String> {
+    let window = app.get_webview_window("main").ok_or("main window not found")?;
+    window.hide().map_err(|e| e.to_string())
 }
