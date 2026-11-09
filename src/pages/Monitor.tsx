@@ -1,13 +1,4 @@
-import {
-  Activity,
-  Cpu,
-  Gauge,
-  HardDrive,
-  MemoryStick,
-  Network,
-  RefreshCw,
-  Timer,
-} from "lucide-react";
+import { Activity, Cpu, Gauge, HardDrive, MemoryStick, Network, RefreshCw, Timer } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { LiveChart } from "@/components/LiveChart";
@@ -49,16 +40,16 @@ function LiveTile({
   hint?: string;
 }) {
   return (
-    <Card className="p-4">
-      <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-muted">
+    <Card>
+      <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-mut">
         <span className="flex items-center gap-1.5">
           <Icon className="size-3.5" aria-hidden />
           {label}
         </span>
-        <span className="size-1.5 rounded-full bg-ok animate-pulse-soft" aria-hidden />
+        <span className="size-1.5 rounded-full bg-ok animate-pulse-glow" aria-hidden />
       </div>
-      <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight">{value}</p>
-      {hint ? <p className="mt-0.5 truncate text-[11px] text-muted">{hint}</p> : null}
+      <p className="mt-2 text-2xl font-semibold tabular-nums tracking-tight text-text">{value}</p>
+      {hint ? <p className="mt-0.5 truncate text-[11px] text-mut">{hint}</p> : null}
       {percent !== undefined ? (
         <Meter value={percent} tone={usageTone(percent)} className="mt-3" />
       ) : null}
@@ -70,7 +61,7 @@ function CoreGrid({ values }: { values: number[] }) {
   const { t } = useTranslation();
 
   if (values.length === 0) {
-    return <p className="py-6 text-center text-xs text-muted">{t("monitor.noCores")}</p>;
+    return <p className="py-6 text-center text-xs text-mut">{t("monitor.noCores")}</p>;
   }
 
   return (
@@ -80,7 +71,7 @@ function CoreGrid({ values }: { values: number[] }) {
         return (
           <div
             key={index.toString()}
-            className="flex h-14 items-end overflow-hidden rounded-sm bg-panel-2/70"
+            className="flex h-14 items-end overflow-hidden rounded-sm bg-card"
             title={`${t("monitor.core")} ${index + 1}: ${formatPercent(percent, 0)}`}
           >
             <div
@@ -94,13 +85,22 @@ function CoreGrid({ values }: { values: number[] }) {
   );
 }
 
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className="size-1.5 rounded-full" style={{ backgroundColor: color }} aria-hidden />
+      {label}
+    </span>
+  );
+}
+
 export function Monitor() {
   const { t } = useTranslation();
   const interval = useAppStore((state) => state.settings.monitorIntervalMs);
   const { samples, latest, loading, error } = useLiveMetrics();
 
   if (loading && !latest) {
-    return <Card className="h-72 animate-pulse bg-panel-2/40" />;
+    return <Card className="h-72 animate-pulse" />;
   }
 
   if (error && !latest) {
@@ -123,105 +123,89 @@ export function Monitor() {
   const memoryPercent = latest?.memoryPercent ?? 0;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-panel/60 px-4 py-3">
-        <div className="flex items-center gap-2 text-xs text-muted">
-          <span className="size-1.5 rounded-full bg-ok animate-pulse-soft" aria-hidden />
-          {latest
-            ? t("monitor.liveSince", { value: formatDuration(latest.uptimeSeconds) })
-            : t("monitor.waiting")}
+    <section className="view" id="monitor">
+      <div className="hud">
+        <div className="stat">
+          {t("monitor.systemStatus")}<i />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge tone="muted">{t("monitor.sampleCount", { value: samples.length })}</Badge>
-          <Badge tone="accent">
-            <Timer className="size-3" aria-hidden />
-            {interval} ms
-          </Badge>
-        </div>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <LiveTile
-          icon={Cpu}
-          label={t("monitor.liveCpu")}
-          value={formatPercent(latest?.cpuPercent ?? 0, 1)}
-          percent={latest?.cpuPercent ?? 0}
-          hint={latest ? formatMhz(latest.cpuFrequencyMhz) : undefined}
-        />
-        <LiveTile
-          icon={MemoryStick}
-          label={t("monitor.liveMemory")}
-          value={formatPercent(memoryPercent, 0)}
-          percent={memoryPercent}
-          hint={
-            latest
-              ? t("dashboard.usedOf", {
-                  used: formatBytes(latest.memoryUsedBytes),
-                  total: formatBytes(latest.memoryTotalBytes),
-                })
-              : undefined
-          }
-        />
-        <LiveTile
-          icon={HardDrive}
-          label={t("monitor.liveDisk")}
-          value={diskBusy === null ? t("common.unknown") : formatPercent(diskBusy, 1)}
-          percent={diskBusy ?? undefined}
-          hint={
-            latest
-              ? t("monitor.diskThroughput", {
-                  read: formatRate(latest.diskReadBytesPerSec),
-                  write: formatRate(latest.diskWriteBytesPerSec),
-                })
-              : undefined
-          }
-        />
-        <LiveTile
-          icon={Network}
-          label={t("monitor.liveNetwork")}
-          value={formatRate(latest?.networkRxBytesPerSec ?? 0)}
-          hint={t("monitor.upload", { value: formatRate(latest?.networkTxBytesPerSec ?? 0) })}
-        />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="size-4 text-accent" aria-hidden />
-            {t("monitor.chartTitle")}
-          </CardTitle>
-          <div className="flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-wider text-muted">
-            <LegendDot color="var(--accent)" label={t("monitor.chartCpu")} />
-            <LegendDot color="var(--accent-2)" label={t("monitor.chartMemory")} />
-            <LegendDot color="var(--warn)" label={t("monitor.chartDisk")} />
+        <div className="duo">
+          <div className="unit cpu">
+            <div>
+              <h3>{t("monitor.cpuCore")}</h3>
+              <small>{t("monitor.tempAndUsage")}</small>
+            </div>
+            <div className="big">
+              <svg viewBox="0 0 100 100">
+                <circle className="t" cx="50" cy="50" r="46" pathLength="100" strokeDasharray="75 25" />
+                <circle className="p" data-arc="cpu" cx="50" cy="50" r="46" pathLength="100" strokeDasharray={`${(latest?.cpuPercent ?? 0) * 0.75} 100`} />
+              </svg>
+              <div className="orb" data-k="tc">—</div>
+            </div>
+            <div>Uso <span data-k="cpu" data-u=" %">—</span></div>
+            <div className="mini">
+              <svg viewBox="0 0 100 100">
+                <circle className="t" cx="50" cy="50" r="42" pathLength="100" strokeDasharray="75 25" />
+                <circle className="p" data-arc="mem" cx="50" cy="50" r="42" pathLength="100" strokeDasharray={`${(latest?.memoryPercent ?? 0) * 0.75} 100`} />
+              </svg>
+              <div data-k="mem" data-u="%">—</div>
+            </div>
+            <b>RAM</b>
           </div>
-        </CardHeader>
-        <CardContent className="pb-4">
-          <LiveChart samples={samples} />
-        </CardContent>
-      </Card>
+          <div className="wire" />
+          <div className="unit gpu">
+            <div>
+              <h3>{t("monitor.gpuCore")}</h3>
+              <small>{t("monitor.tempAndUsage")}</small>
+            </div>
+            <div className="big">
+              <svg viewBox="0 0 100 100">
+                <circle className="t" cx="50" cy="50" r="46" pathLength="100" strokeDasharray="75 25" />
+                <circle className="p" data-arc="gpu" cx="50" cy="50" r="46" pathLength="100" strokeDasharray={`${(latest?.gpuPercent ?? 0) * 0.75} 100`} />
+              </svg>
+              <div className="orb" data-k="tg">—</div>
+            </div>
+            <div>Uso <span data-k="gpu" data-u=" %">—</span></div>
+            <div className="mini">
+              <svg viewBox="0 0 100 100">
+                <circle className="t" cx="50" cy="50" r="42" pathLength="100" strokeDasharray="75 25" />
+                <circle className="p" data-arc="vram" cx="50" cy="50" r="42" pathLength="100" strokeDasharray={`${(latest?.vramPercent ?? 0) * 0.75} 100`} />
+              </svg>
+              <div data-k="vram" data-u="%">—</div>
+            </div>
+            <b>VRAM</b>
+          </div>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gauge className="size-4 text-accent" aria-hidden />
-            {t("monitor.cores", { value: latest?.perCorePercent.length ?? 0 })}
-          </CardTitle>
-          <Badge tone="muted">{t("monitor.perCore")}</Badge>
-        </CardHeader>
-        <CardContent className="pb-5">
-          <CoreGrid values={latest?.perCorePercent ?? []} />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="size-4 text-accent" aria-hidden />
+              {t("monitor.chartTitle")}
+            </CardTitle>
+            <div className="flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-wider text-mut">
+              <LegendDot color="var(--accent)" label={t("monitor.chartCpu")} />
+              <LegendDot color="var(--accent-2)" label={t("monitor.chartMemory")} />
+              <LegendDot color="var(--warn)" label={t("monitor.chartDisk")} />
+            </div>
+          </CardHeader>
+          <CardContent className="pb-4">
+            <LiveChart samples={samples} />
+          </CardContent>
+        </Card>
 
-function LegendDot({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <span className="size-1.5 rounded-full" style={{ backgroundColor: color }} aria-hidden />
-      {label}
-    </span>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Gauge className="size-4 text-accent" aria-hidden />
+              {t("monitor.cores", { value: latest?.perCorePercent.length ?? 0 })}
+            </CardTitle>
+            <Badge tone="muted">{t("monitor.perCore")}</Badge>
+          </CardHeader>
+          <CardContent className="pb-5">
+            <CoreGrid values={latest?.perCorePercent ?? []} />
+          </CardContent>
+        </Card>
+      </div>
+    </section>
   );
 }

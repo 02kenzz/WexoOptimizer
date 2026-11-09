@@ -25,7 +25,7 @@ impl Default for AppSettings {
             language: Language::Es,
             theme: Theme::System,
             monitor_interval_ms: 1000,
-            minimize_to_tray: false,
+            minimize_to_tray: true,
             update_channel: UpdateChannel::Stable,
             telemetry_enabled: false,
             data_dir: None,

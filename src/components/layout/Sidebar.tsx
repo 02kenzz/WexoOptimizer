@@ -1,97 +1,62 @@
-import {
-  Activity,
-  History,
-  LayoutDashboard,
-  LineChart,
-  type LucideIcon,
-  Settings,
-  Sparkles,
-} from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { NavLink } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
-import { isDesktop } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
 
 interface NavItem {
-  to: string;
+  view: string;
   labelKey: string;
-  icon: LucideIcon;
+  icon: string;
+  path: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
-  { to: "/diagnostics", labelKey: "nav.diagnostics", icon: Activity },
-  { to: "/optimizations", labelKey: "nav.optimizations", icon: Sparkles },
-  { to: "/monitor", labelKey: "nav.monitor", icon: LineChart },
-  { to: "/history", labelKey: "nav.history", icon: History },
-  { to: "/settings", labelKey: "nav.settings", icon: Settings },
+  { view: "inicio", labelKey: "nav.dashboard", icon: "home", path: "/dashboard" },
+  { view: "diagnostico", labelKey: "nav.diagnostics", icon: "search", path: "/diagnostics" },
+  { view: "optimizacion", labelKey: "nav.optimizations", icon: "bolt", path: "/optimizations" },
+  { view: "monitor", labelKey: "nav.monitor", icon: "mon", path: "/monitor" },
+  { view: "herramientas", labelKey: "nav.tools", icon: "tools", path: "/tools" },
+  { view: "historial", labelKey: "nav.history", icon: "folder", path: "/history" },
+  { view: "configuracion", labelKey: "nav.settings", icon: "gear", path: "/settings" },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  currentView: string;
+}
+
+export function Sidebar({ currentView }: SidebarProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const appInfo = useAppStore((state) => state.appInfo);
 
   return (
-    <aside className="hidden w-[248px] shrink-0 flex-col border-r border-border bg-panel/55 backdrop-blur-xl md:flex">
-      <div className="flex items-center gap-3 px-5 pb-5 pt-6">
-        <div className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-accent to-accent-2 text-lg font-black text-accent-contrast shadow-[0_10px_30px_-12px_var(--accent)]">
-          W
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold tracking-tight">Wexo Optimizer</p>
-          <p className="truncate text-[10px] uppercase tracking-[0.14em] text-muted">
-            {t("app.tagline")}
-          </p>
+    <aside>
+      <div className="brand">
+        <div className="logo" />
+        <div>
+          <b>Optimizer</b>
+          <span>Rendimiento sin límites</span>
         </div>
       </div>
-
-      <nav className="flex-1 space-y-1 px-3" aria-label={t("app.name")}>
+      <nav>
         {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              cn(
-                "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                isActive
-                  ? "bg-accent-soft font-medium text-accent"
-                  : "text-muted hover:bg-panel-2 hover:text-text",
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                {isActive ? (
-                  <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-accent" />
-                ) : null}
-                <item.icon className="size-4 shrink-0" strokeWidth={1.9} aria-hidden />
-                <span className="truncate">{t(item.labelKey)}</span>
-              </>
+          <button
+            key={item.view}
+            data-view={item.view}
+            className={cn(
+              "flex gap-14 items-center px-[14px] py-[13px] rounded-[14px] text-left border border-transparent transition-[background,color] duration-200",
+              currentView === item.view
+                ? "text-text bg-[rgba(255,255,255,.08)] border-line"
+                : "text-mut hover:text-text hover:bg-[rgba(255,255,255,.04)]"
             )}
-          </NavLink>
+            onClick={() => navigate(item.path)}
+          >
+            <svg className="ic"><use href={`#${item.icon}`} /></svg>
+            {t(item.labelKey)}
+          </button>
         ))}
       </nav>
-
-      <div className="space-y-3 border-t border-border/70 p-4">
-        <div className="flex items-center justify-between text-[11px] text-muted">
-          <span className="font-mono">{appInfo?.version ?? "0.1.0"}</span>
-          <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wider">
-            {t("app.foundation")}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-panel-2/60 px-2.5 py-2 text-[11px] text-muted">
-          <span
-            className={cn(
-              "size-1.5 rounded-full",
-              isDesktop ? "bg-ok animate-pulse-soft" : "bg-warn",
-            )}
-            aria-hidden
-          />
-          <span className="truncate">{isDesktop ? "Tauri conectado" : t("app.browserMode")}</span>
-        </div>
-      </div>
     </aside>
   );
 }

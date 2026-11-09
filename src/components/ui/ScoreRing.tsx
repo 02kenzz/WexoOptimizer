@@ -28,7 +28,7 @@ export function ScoreRing({ value, label, size = 156, className }: ScoreRingProp
       aria-label={`${label}: ${clamped}`}
     >
       <svg viewBox="0 0 140 140" className="size-full -rotate-90" aria-hidden="true">
-        <circle cx="70" cy="70" r={radius} fill="none" stroke="var(--border)" strokeWidth="9" />
+        <circle cx="70" cy="70" r={radius} fill="none" stroke="var(--line)" strokeWidth="9" />
         <circle
           cx="70"
           cy="70"
@@ -40,11 +40,12 @@ export function ScoreRing({ value, label, size = 156, className }: ScoreRingProp
           strokeDasharray={circumference}
           strokeDashoffset={offset}
           style={{ transition: "stroke-dashoffset 700ms cubic-bezier(0.22, 1, 0.36, 1)" }}
+          className="animate-ring-draw"
         />
       </svg>
       <div className="absolute flex flex-col items-center">
-        <span className="text-4xl font-semibold tabular-nums tracking-tight">{clamped}</span>
-        <span className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-muted">
+        <span className="text-4xl font-semibold tabular-nums tracking-tight text-text">{clamped}</span>
+        <span className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-text-dim">
           {label}
         </span>
       </div>

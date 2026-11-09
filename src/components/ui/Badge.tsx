@@ -5,12 +5,12 @@ import { cn } from "@/lib/utils";
 type Tone = "neutral" | "accent" | "ok" | "warn" | "danger" | "muted";
 
 const TONES: Record<Tone, string> = {
-  neutral: "border-border bg-panel-2 text-text",
-  accent: "border-accent/35 bg-accent-soft text-accent",
-  ok: "border-ok/35 bg-ok/10 text-ok",
-  warn: "border-warn/40 bg-warn/10 text-warn",
-  danger: "border-danger/40 bg-danger/10 text-danger",
-  muted: "border-border bg-panel-2 text-muted",
+  neutral: "border-line bg-card text-text",
+  accent: "border-accent bg-accent/10 text-accent",
+  ok: "border-ok bg-ok/10 text-ok",
+  warn: "border-warn bg-warn/10 text-warn",
+  danger: "border-danger bg-danger/10 text-danger",
+  muted: "border-line bg-card text-mut",
 };
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {

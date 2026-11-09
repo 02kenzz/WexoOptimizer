@@ -28,22 +28,22 @@ export function TopBar() {
   const isDark = settings.theme === "dark" || settings.theme === "system";
 
   return (
-    <header className="z-10 flex h-[74px] shrink-0 items-center justify-between gap-4 border-b border-border/80 bg-bg/70 px-6 backdrop-blur-xl lg:px-8">
+    <header className="z-10 flex h-18 shrink-0 items-center justify-between gap-4 border-b border-border/30 bg-bg-elevated/60 px-5 backdrop-blur-2xl lg:px-8">
       <div className="min-w-0">
-        <h1 className="truncate text-lg font-semibold tracking-tight">{t(meta.title)}</h1>
-        <p className="truncate text-xs text-muted">{t(meta.subtitle)}</p>
+        <h1 className="truncate text-lg font-semibold tracking-tight text-text">{t(meta.title)}</h1>
+        <p className="truncate text-xs text-text-dim">{t(meta.subtitle)}</p>
       </div>
 
       <div className="flex items-center gap-2">
         {!isDesktop ? (
           <Tooltip label={t("common.browserHint")}>
-            <span className="hidden rounded-full border border-warn/40 bg-warn/10 px-2.5 py-1 text-[11px] text-warn sm:inline-flex">
+            <span className="hidden rounded-full border border-warn/30 bg-warn/10 px-2.5 py-1 text-[11px] text-warn sm:inline-flex">
               {t("app.browserMode")}
             </span>
           </Tooltip>
         ) : null}
 
-        <span className="hidden items-center gap-1.5 rounded-full border border-border bg-panel-2/60 px-2.5 py-1 text-[11px] text-muted sm:inline-flex">
+        <span className="hidden items-center gap-1.5 rounded-full border border-border/30 bg-panel/50 px-2.5 py-1 text-[11px] text-text-dim sm:inline-flex">
           {appInfo?.isAdmin ? (
             <ShieldCheck className="size-3.5 text-ok" aria-hidden />
           ) : (
@@ -62,7 +62,7 @@ export function TopBar() {
             }
           >
             <Languages className="size-4" aria-hidden />
-            <span className="font-mono text-[11px] uppercase">{settings.language}</span>
+            <span className="font-mono text-[11px] uppercase text-text-muted">{settings.language}</span>
           </Button>
         </Tooltip>
 

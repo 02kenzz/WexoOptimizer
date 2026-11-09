@@ -52,12 +52,11 @@ export function LiveChart({ samples }: { samples: LiveMetrics[] }) {
 
     // Fallbacks only apply before the theme stylesheet is ready; `theme` is a
     // dependency so the plot is rebuilt when the palette changes.
-    const light = theme === "light";
-    const text = cssVar("--muted", light ? "#5a6b84" : "#8ea3c0");
-    const grid = cssVar("--border", light ? "#d6e0ee" : "#1d2b42");
-    const accent = cssVar("--accent", light ? "#0d9488" : "#35e0b2");
-    const blue = cssVar("--accent-2", light ? "#2563eb" : "#5b8cff");
-    const warn = cssVar("--warn", light ? "#b45309" : "#fbbf24");
+    const text = cssVar("--mut", "#9b9ba4");
+    const grid = cssVar("--line", "rgba(255, 255, 255, 0.09)");
+    const accent = cssVar("--accent", "#6d5dfb");
+    const blue = cssVar("--accent-2", "#3b82f6");
+    const warn = cssVar("--warn", "#f59e0b");
 
     const options: uPlot.Options = {
       width: Math.max(container.clientWidth, 320),
@@ -72,13 +71,13 @@ export function LiveChart({ samples }: { samples: LiveMetrics[] }) {
       axes: [
         {
           stroke: text,
-          font: "11px system-ui, sans-serif",
+          font: "11px Inter, system-ui, sans-serif",
           grid: { stroke: grid, width: 1 },
           ticks: { stroke: grid, width: 1 },
         },
         {
           stroke: text,
-          font: "11px system-ui, sans-serif",
+          font: "11px Inter, system-ui, sans-serif",
           size: 44,
           grid: { stroke: grid, width: 1 },
           ticks: { stroke: grid, width: 1 },

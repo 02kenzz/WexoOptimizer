@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { sampleOptimizations } from "@/data/optimizations";
 import { riskTone } from "@/lib/tone";
@@ -64,7 +64,6 @@ export function Optimizations() {
       await ipc.applyOptimizations(Array.from(selected), false);
       setSelected(new Set());
       setExpanded(null);
-      // Refresh optimizations to update availability
       const opts = await ipc.getOptimizations();
       setOptimizations(opts);
     } catch (e) {
@@ -78,7 +77,7 @@ export function Optimizations() {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="size-8 animate-spin text-accent" aria-hidden />
-        <span className="ml-3 text-muted">{t("common.loading")}</span>
+        <span className="ml-3 text-mut">{t("common.loading")}</span>
       </div>
     );
   }
@@ -93,9 +92,9 @@ export function Optimizations() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-accent/25 bg-accent-soft/50 px-4 py-3">
-        <div className="flex items-start gap-2.5 text-xs text-muted">
+    <section className="view" id="optimizacion">
+      <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-line bg-card px-4 py-3">
+        <div className="flex items-start gap-2.5 text-xs text-mut">
           <Info className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden />
           <p className="max-w-3xl leading-relaxed">{t("optimizations.previewNote")}</p>
         </div>
@@ -104,6 +103,7 @@ export function Optimizations() {
           size="sm"
           disabled={selected.size === 0 || applying}
           onClick={handleApply}
+          className="btn w"
         >
           {applying ? (
             <>
@@ -130,13 +130,13 @@ export function Optimizations() {
               "rounded-full border px-3 py-1.5 text-xs transition-colors",
               filter === category
                 ? "border-accent/50 bg-accent-soft font-medium text-accent"
-                : "border-border bg-panel-2/40 text-muted hover:border-accent/35 hover:text-text",
+                : "border-line bg-card text-mut hover:border-accent/35 hover:text-text"
             )}
           >
             {category === "all" ? t("optimizations.all") : t(`categories.${category}`)}
           </button>
         ))}
-        <span className="ml-auto text-[11px] text-muted">
+        <span className="ml-auto text-[11px] text-mut">
           {visible.length} / {optimizations.length}
         </span>
       </div>
@@ -163,7 +163,7 @@ export function Optimizations() {
                     aria-pressed={isSelected}
                     aria-label={item.title}
                     onClick={() => toggleSelected(item.id)}
-                    className="mt-0.5 rounded-full text-muted transition-colors hover:text-accent"
+                    className="mt-0.5 rounded-full text-mut transition-colors hover:text-accent"
                   >
                     {isSelected ? (
                       <CircleCheck className="size-5 text-accent" aria-hidden />
@@ -187,15 +187,15 @@ export function Optimizations() {
                       ) : null}
                     </div>
 
-                    <p className="mt-1.5 text-xs leading-relaxed text-muted">{item.description}</p>
+                    <p className="mt-1.5 text-xs leading-relaxed text-mut">{item.description}</p>
 
                     {isOpen ? (
-                      <div className="mt-3 grid gap-3 rounded-lg border border-border/70 bg-panel-2/40 p-3 sm:grid-cols-2">
+                      <div className="mt-3 grid gap-3 rounded-lg border border-line bg-card p-3 sm:grid-cols-2">
                         <div>
                           <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">
                             {t("optimizations.why")}
                           </p>
-                          <p className="mt-1 text-[11px] leading-relaxed text-muted">
+                          <p className="mt-1 text-[11px] leading-relaxed text-mut">
                             {item.rationale}
                           </p>
                         </div>
@@ -203,7 +203,7 @@ export function Optimizations() {
                           <p className="text-[10px] font-semibold uppercase tracking-wider text-accent">
                             {t("optimizations.what")}
                           </p>
-                          <ul className="mt-1 space-y-1 text-[11px] leading-relaxed text-muted">
+                          <ul className="mt-1 space-y-1 text-[11px] leading-relaxed text-mut">
                             {item.snapshot.services.length > 0 ? (
                               <li>Servicios: {item.snapshot.services.join(", ")}</li>
                             ) : null}
@@ -241,6 +241,6 @@ export function Optimizations() {
           })}
         </div>
       )}
-    </div>
+    </section>
   );
 }
