@@ -13,7 +13,15 @@ tracing = { workspace = true }
 sysinfo = "0.33"
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Performance", "Win32_UI_Shell"] }
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_System_Diagnostics_Etw",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Performance",
+    "Win32_System_Time",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
 wmi = "0.18"
 
 [target.'cfg(unix)'.dependencies]

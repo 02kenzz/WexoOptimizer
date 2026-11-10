@@ -3,16 +3,22 @@
 //! Windows-specific access is isolated here so the rest of the workspace stays
 //! testable and portable.
 
+pub mod fps;
+pub mod gpu;
+pub mod overlay;
 pub mod pdh;
 pub mod sampler;
+pub mod thermal;
 #[cfg(windows)]
 pub mod wmi;
 #[cfg(not(windows))]
 #[path = "wmi_other.rs"]
 pub mod wmi;
 
+pub use overlay::OverlayProbe;
 pub use pdh::PdhSampler;
 pub use sampler::LiveSampler;
+pub use thermal::ThermalSampler;
 pub use wmi::{enrich_profile, WmiCache, WmiDisk, WmiSnapshot};
 
 use std::sync::{Arc, Mutex};

@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Switch } from "@/components/ui/Switch";
-import { isDesktop, ipc } from "@/lib/ipc";
+import { ipc, isDesktop } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
 import type { Theme } from "@/types";
@@ -172,6 +172,13 @@ export function Settings() {
                 {settings.monitorIntervalMs} ms
               </span>
             </div>
+          </Row>
+
+          <Row label={t("settings.overlay")} hint={t("settings.overlayHint")}>
+            <Switch
+              checked={settings.overlayEnabled}
+              onCheckedChange={(checked) => void updateSettings({ overlayEnabled: checked })}
+            />
           </Row>
         </Section>
 

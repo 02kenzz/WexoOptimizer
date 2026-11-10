@@ -4,7 +4,7 @@ pub mod snapshot;
 pub mod transaction;
 
 pub use snapshot::{capture_snapshot, load_snapshot, list_snapshots, restore_snapshot, Snapshot, SnapshotError};
-pub use transaction::{TransactionError, TransactionLog, TransactionRecord, TransactionStatus};
+pub use transaction::{DatabaseReport, TransactionError, TransactionLog, TransactionRecord, TransactionStatus};
 
 use wexo_core::AppSettings;
 

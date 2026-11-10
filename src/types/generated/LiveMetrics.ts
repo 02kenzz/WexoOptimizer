@@ -11,7 +11,15 @@ cpuPercent: number,
 /**
  * Per-logical-core usage, 0-100. Empty when the collector cannot provide it.
  */
-perCorePercent: Array<number>, cpuFrequencyMhz: number, memoryUsedBytes: number, memoryTotalBytes: number, 
+perCorePercent: Array<number>, cpuFrequencyMhz: number, 
+/**
+ * CPU temperature in Celsius. `None` when Windows exposes no sensor.
+ */
+cpuTempCelsius: number | null, 
+/**
+ * GPU temperature in Celsius. `None` when the driver does not report it.
+ */
+gpuTempCelsius: number | null, memoryUsedBytes: number, memoryTotalBytes: number, 
 /**
  * RAM usage, 0-100.
  */

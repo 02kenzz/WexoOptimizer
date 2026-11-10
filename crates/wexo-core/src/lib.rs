@@ -7,6 +7,7 @@ pub mod app;
 pub mod diagnostics;
 pub mod metrics;
 pub mod optimization;
+pub mod overlay;
 pub mod profile;
 pub mod settings;
 
@@ -20,8 +21,10 @@ pub use optimization::{
     Applicability, BenchmarkDelta, Category, Optimization, RiskLevel, SnapshotSpec,
     TransactionRecord, TransactionStatus, VerificationResult,
 };
+pub use overlay::OverlayStats;
 pub use profile::{
-    CpuInfo, DiskInfo, DiskKind, GpuInfo, MemoryInfo, NetworkInfo, OsInfo, SmartStatus, SystemProfile,
+    CpuInfo, DiskInfo, DiskKind, GpuInfo, MemoryInfo, NetworkInfo, OsInfo, SmartStatus,
+    SystemProfile,
 };
 pub use settings::{AppSettings, Language, Theme, UpdateChannel};
 

@@ -14,6 +14,9 @@ pub struct AppSettings {
     pub update_channel: UpdateChannel,
     /// Opt-in telemetry. Off by default, always.
     pub telemetry_enabled: bool,
+    /// Shows the always-on-top performance overlay window.
+    #[serde(default)]
+    pub overlay_enabled: bool,
     /// Custom data directory for snapshots and transaction log. None = use default.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data_dir: Option<String>,
@@ -28,6 +31,7 @@ impl Default for AppSettings {
             minimize_to_tray: true,
             update_channel: UpdateChannel::Stable,
             telemetry_enabled: false,
+            overlay_enabled: false,
             data_dir: None,
         }
     }

@@ -29,6 +29,7 @@
 | **Diagnose** | Live hardware telemetry — CPU, GPU, memory, disks, network, thermals |
 | **Optimize** | One-click toggles for services, power plans, telemetry, visual effects and kernel tuning (Windows and Linux) |
 | **Monitor** | Circular buffers, bottleneck detection, historical trends |
+| **Overlay** | Always-on-top, click-through FPS / CPU / GPU / RAM panel for games — enabled from Settings (Windows). Frame rate is counted from ETW present events, so nothing is injected into the game and the app needs administrator rights for it |
 | **Safety** | Snapshots before every change, SQLite transaction log, one-click rollback |
 
 > **Status:** shell, monitoring, optimization engine and rollback work on Windows and Linux. Windows ships seven registry/service/power tweaks; Linux ships GNOME animations, Bluetooth and `vm.swappiness`.
@@ -48,6 +49,8 @@ Start-Process "$env:TEMP\wexo-setup.exe" -Wait
 > **SmartScreen warning?** The installer is unsigned (open source, no cert budget). Click *More info → Run anyway*. [Why?](https://github.com/02kenzz/WexoOptimizer#code-signing)
 
 > **Administrator rights:** the app elevates itself every time it starts (UAC on Windows, `pkexec` on Linux). If you decline the prompt it still opens, but the tweaks marked *Requires administrator* stay disabled. Launch it with `--no-elevate` to skip the prompt deliberately.
+
+> **CPU temperature:** some desktop boards do not expose ACPI thermal zones. On those, the Monitor reads the CPU package sensor from [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor). When it is installed the app starts it minimized and configures its local web server; it needs the same administrator rights as the app. Without it the temperature tile shows `—` instead of a made-up value.
 
 ### Build from source
 

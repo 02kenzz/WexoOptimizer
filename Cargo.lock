@@ -4261,6 +4261,7 @@ dependencies = [
  "wexo-rules",
  "wexo-safety",
  "wexo-sysinfo",
+ "wexo-tools",
 ]
 
 [[package]]
@@ -4338,6 +4339,17 @@ dependencies = [
  "wexo-core",
  "windows-sys 0.59.0",
  "wmi",
+]
+
+[[package]]
+name = "wexo-tools"
+version = "0.2.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tracing",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

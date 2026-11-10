@@ -20,6 +20,10 @@ pub struct LiveMetrics {
     pub per_core_percent: Vec<f32>,
     #[ts(type = "number")]
     pub cpu_frequency_mhz: u64,
+    /// CPU temperature in Celsius. `None` when Windows exposes no sensor.
+    pub cpu_temp_celsius: Option<f32>,
+    /// GPU temperature in Celsius. `None` when the driver does not report it.
+    pub gpu_temp_celsius: Option<f32>,
     #[ts(type = "number")]
     pub memory_used_bytes: u64,
     #[ts(type = "number")]
@@ -55,6 +59,8 @@ impl LiveMetrics {
             cpu_percent: 0.0,
             per_core_percent: Vec::new(),
             cpu_frequency_mhz: 0,
+            cpu_temp_celsius: None,
+            gpu_temp_celsius: None,
             memory_used_bytes: 0,
             memory_total_bytes: 0,
             memory_percent: 0.0,

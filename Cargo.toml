@@ -7,11 +7,12 @@ members = [
     "crates/wexo-safety",
     "crates/wexo-rules",
     "crates/wexo-monitor",
+    "crates/wexo-tools",
     "src-tauri",
 ]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 license = "MIT"
 rust-version = "1.78"
@@ -28,6 +29,7 @@ wexo-optimizer = { path = "crates/wexo-optimizer" }
 wexo-safety = { path = "crates/wexo-safety" }
 wexo-rules = { path = "crates/wexo-rules" }
 wexo-monitor = { path = "crates/wexo-monitor" }
+wexo-tools = { path = "crates/wexo-tools" }
 
 [profile.dev]
 incremental = true

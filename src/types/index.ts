@@ -22,6 +22,7 @@ export type { MemoryInfo } from "./generated/MemoryInfo";
 export type { NetworkInfo } from "./generated/NetworkInfo";
 export type { Optimization } from "./generated/Optimization";
 export type { OsInfo } from "./generated/OsInfo";
+export type { OverlayStats } from "./generated/OverlayStats";
 export type { RiskLevel } from "./generated/RiskLevel";
 export type { Severity } from "./generated/Severity";
 export type { SnapshotSpec } from "./generated/SnapshotSpec";

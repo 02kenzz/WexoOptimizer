@@ -28,3 +28,4 @@ wexo-optimizer = { workspace = true }
 wexo-safety = { workspace = true }
 wexo-rules = { workspace = true }
 wexo-monitor = { workspace = true }
+wexo-tools = { workspace = true }

@@ -360,6 +360,18 @@ impl OptimizationEngine {
         log.list(limit).map_err(EngineError::Transaction)
     }
 
+    /// Compacts the transaction database (`VACUUM`) and reports its real size.
+    pub fn vacuum_database(&self) -> Result<wexo_safety::DatabaseReport, EngineError> {
+        let log = self.transaction_log.lock();
+        log.vacuum().map_err(EngineError::Transaction)
+    }
+
+    /// Rebuilds the transaction database indexes (`REINDEX`).
+    pub fn reindex_database(&self) -> Result<wexo_safety::DatabaseReport, EngineError> {
+        let log = self.transaction_log.lock();
+        log.reindex().map_err(EngineError::Transaction)
+    }
+
     /// Runs preflight checks.
     fn preflight(&self) -> Result<wexo_safety::PreflightReport, EngineError> {
         let is_admin = wexo_sysinfo::is_elevated();

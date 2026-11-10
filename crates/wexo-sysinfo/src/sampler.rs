@@ -14,6 +14,7 @@ use sysinfo::{Networks, System};
 use wexo_core::LiveMetrics;
 
 use crate::pdh::{try_open, PdhSampler};
+use crate::thermal::ThermalSampler;
 
 struct NetworkBaseline {
     at: Instant,
@@ -25,6 +26,7 @@ pub struct LiveSampler {
     system: System,
     networks: Networks,
     pdh: Option<PdhSampler>,
+    thermal: ThermalSampler,
     baseline: Option<NetworkBaseline>,
 }
 
@@ -41,6 +43,7 @@ impl LiveSampler {
             system,
             networks,
             pdh: try_open(),
+            thermal: ThermalSampler::new(),
             baseline: None,
         }
     }
@@ -91,12 +94,15 @@ impl LiveSampler {
             .cpu_percent
             .unwrap_or_else(|| self.system.global_cpu_usage())
             .clamp(0.0, 100.0);
+        let temperatures = self.thermal.sample();
 
         LiveMetrics {
             timestamp_ms: now_ms(),
             cpu_percent: total_cpu,
             per_core_percent,
             cpu_frequency_mhz,
+            cpu_temp_celsius: temperatures.cpu_celsius,
+            gpu_temp_celsius: temperatures.gpu_celsius,
             memory_used_bytes: used_memory,
             memory_total_bytes: total_memory,
             memory_percent,

@@ -16,6 +16,10 @@ monitorIntervalMs: number, minimizeToTray: boolean, updateChannel: UpdateChannel
  */
 telemetryEnabled: boolean, 
 /**
+ * Shows the always-on-top performance overlay window.
+ */
+overlayEnabled: boolean, 
+/**
  * Custom data directory for snapshots and transaction log. None = use default.
  */
 dataDir: string | null, };

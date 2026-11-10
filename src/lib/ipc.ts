@@ -1,4 +1,15 @@
-import type { AppInfo, AppSettings, DiagnosticReport, LiveMetrics, SystemProfile, Optimization, VerificationResult, BenchmarkDelta, TransactionStatus } from "@/types";
+import type {
+  AppInfo,
+  AppSettings,
+  BenchmarkDelta,
+  DiagnosticReport,
+  LiveMetrics,
+  Optimization,
+  OverlayStats,
+  SystemProfile,
+  TransactionStatus,
+  VerificationResult,
+} from "@/types";
 
 export interface OptimizationResult {
   optimization_id: string;
@@ -21,6 +32,36 @@ export interface TransactionRecord {
   rollback_available: boolean;
   snapshot_id?: string;
   message?: string;
+}
+
+/** Result of a cleanup scan or cleanup run (mirrors `wexo_tools::CleanReport`). */
+export interface CleanReport {
+  bytes: number;
+  files: number;
+  skipped: number;
+  roots: string[];
+}
+
+/** State of a long-running maintenance command. */
+export type JobStatus = "running" | "succeeded" | "failed" | "cancelled";
+
+export interface JobSnapshot {
+  id: string;
+  kind: string;
+  label: string;
+  status: JobStatus;
+  startedMs: number;
+  finishedMs: number | null;
+  exitCode: number | null;
+  lines: string[];
+  droppedLines: number;
+}
+
+/** Size before/after of a database maintenance pass. */
+export interface DatabaseReport {
+  beforeBytes: number;
+  afterBytes: number;
+  transactions: number;
 }
 
 /**
@@ -50,6 +91,7 @@ const defaultSettings: AppSettings = {
   minimizeToTray: false,
   updateChannel: "stable",
   telemetryEnabled: false,
+  overlayEnabled: false,
   dataDir: null,
 };
 
@@ -93,6 +135,11 @@ export const ipc = {
 
   getMetricsHistory(): Promise<LiveMetrics[]> {
     return isDesktop ? invoke("get_metrics_history") : backendUnavailable();
+  },
+
+  /** Snapshot for the floating performance overlay. */
+  getOverlayStats(): Promise<OverlayStats> {
+    return isDesktop ? invoke("get_overlay_stats") : backendUnavailable();
   },
 
   getMonitorInterval(): Promise<number | null> {
@@ -146,7 +193,9 @@ export const ipc = {
   },
 
   applyOptimizations(optimization_ids: string[], dry_run: boolean): Promise<ApplyResult> {
-    return isDesktop ? invoke("apply_optimizations", { optimizationIds: optimization_ids, dryRun: dry_run }) : backendUnavailable();
+    return isDesktop
+      ? invoke("apply_optimizations", { optimizationIds: optimization_ids, dryRun: dry_run })
+      : backendUnavailable();
   },
 
   getTransactionHistory(limit: number): Promise<TransactionRecord[]> {
@@ -154,7 +203,41 @@ export const ipc = {
   },
 
   rollbackTransaction(transaction_id: string): Promise<void> {
-    return isDesktop ? invoke("rollback_transaction", { transactionId: transaction_id }) : backendUnavailable();
+    return isDesktop
+      ? invoke("rollback_transaction", { transactionId: transaction_id })
+      : backendUnavailable();
+  },
+
+  /** Measures what a cleanup would free. Deletes nothing. */
+  scanCleanup(kind: string): Promise<CleanReport> {
+    return isDesktop ? invoke("scan_cleanup", { kind }) : backendUnavailable();
+  },
+
+  /** Deletes the files of one cleanup kind. */
+  runCleanup(kind: string): Promise<CleanReport> {
+    return isDesktop ? invoke("run_cleanup", { kind }) : backendUnavailable();
+  },
+
+  /** Starts a long-running maintenance command (`sfc`, `dism`, `defrag`...). */
+  startToolJob(tool: string): Promise<JobSnapshot> {
+    return isDesktop ? invoke("start_tool_job", { tool }) : backendUnavailable();
+  },
+
+  getToolJob(id: string): Promise<JobSnapshot | null> {
+    return isDesktop ? invoke("get_tool_job", { id }) : backendUnavailable();
+  },
+
+  getToolJobs(): Promise<JobSnapshot[]> {
+    return isDesktop ? invoke("get_tool_jobs") : backendUnavailable();
+  },
+
+  cancelToolJob(id: string): Promise<boolean> {
+    return isDesktop ? invoke("cancel_tool_job", { id }) : backendUnavailable();
+  },
+
+  /** `vacuum` compacts the database, `reindex` rebuilds its indexes. */
+  maintainDatabase(action: "vacuum" | "reindex"): Promise<DatabaseReport> {
+    return isDesktop ? invoke("maintain_database", { action }) : backendUnavailable();
   },
 };
 

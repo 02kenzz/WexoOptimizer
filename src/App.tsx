@@ -2,15 +2,16 @@ import { useEffect } from "react";
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/AppShell";
+import { ToastProvider } from "@/hooks/useToast";
 import { Dashboard } from "@/pages/Dashboard";
 import { Diagnostics } from "@/pages/Diagnostics";
 import { History } from "@/pages/History";
 import { Monitor } from "@/pages/Monitor";
 import { Optimizations } from "@/pages/Optimizations";
+import { Overlay } from "@/pages/Overlay";
 import { Settings } from "@/pages/Settings";
 import { Tools } from "@/pages/Tools";
 import { useAppStore } from "@/stores/appStore";
-import { ToastProvider } from "@/hooks/useToast";
 
 /** Keeps `<html data-theme>` in sync with the stored preference. */
 function ThemeSync() {
@@ -35,12 +36,31 @@ function ThemeSync() {
   return null;
 }
 
+/** True inside the overlay window created by `src-tauri/src/overlay.rs`. */
+function isOverlayWindow(): boolean {
+  try {
+    const internals = (
+      window as {
+        __TAURI_INTERNALS__?: { metadata?: { currentWindow?: { label?: string } } };
+      }
+    ).__TAURI_INTERNALS__;
+    return internals?.metadata?.currentWindow?.label === "overlay";
+  } catch {
+    return false;
+  }
+}
+
 export default function App() {
   const bootstrap = useAppStore((state) => state.bootstrap);
+  const overlay = isOverlayWindow();
 
   useEffect(() => {
-    void bootstrap();
-  }, [bootstrap]);
+    if (!overlay) void bootstrap();
+  }, [bootstrap, overlay]);
+
+  if (overlay) {
+    return <Overlay />;
+  }
 
   return (
     <>

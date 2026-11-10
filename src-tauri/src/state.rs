@@ -3,11 +3,12 @@ use std::time::Duration;
 
 use tauri::{AppHandle, Emitter};
 use tracing_appender::non_blocking::WorkerGuard;
-use wexo_core::{AppSettings, LiveMetrics};
+use wexo_core::{AppSettings, LiveMetrics, OverlayStats};
 use wexo_monitor::{MetricSource, MonitorHandle, DEFAULT_HISTORY_CAPACITY};
 use wexo_optimizer::OptimizationEngine;
 use wexo_safety::init_safety;
-use wexo_sysinfo::{LiveCollector, LiveSampler};
+use wexo_sysinfo::{LiveCollector, LiveSampler, OverlayProbe};
+use wexo_tools::JobManager;
 
 use crate::config::AppPaths;
 use crate::events;
@@ -32,14 +33,19 @@ pub struct AppState {
     monitor: Mutex<Option<MonitorHandle>>,
     /// Optimization engine with safety layer.
     pub engine: Arc<Mutex<OptimizationEngine>>,
+    /// GPU counters and ETW frame timing for the overlay. Opened lazily, so a
+    /// disabled overlay costs nothing.
+    overlay: Mutex<OverlayProbe>,
+    /// Cleanup and long-running maintenance commands from the Tools page.
+    pub tools: JobManager,
     // Kept alive for the whole process so buffered log lines are flushed on exit.
     _log_guard: Mutex<Option<WorkerGuard>>,
 }
 
 impl AppState {
     pub fn new(paths: AppPaths, settings: AppSettings, log_guard: Option<WorkerGuard>) -> Self {
-        let (transaction_log, _data_dir) = init_safety(&settings)
-            .expect("failed to initialize safety layer");
+        let (transaction_log, _data_dir) =
+            init_safety(&settings).expect("failed to initialize safety layer");
         let engine = OptimizationEngine::new(transaction_log);
 
         Self {
@@ -48,6 +54,8 @@ impl AppState {
             collector: LiveCollector::new(),
             monitor: Mutex::new(None),
             engine: Arc::new(Mutex::new(engine)),
+            overlay: Mutex::new(OverlayProbe::new()),
+            tools: JobManager::new(),
             _log_guard: Mutex::new(log_guard),
         }
     }
@@ -118,6 +126,20 @@ impl AppState {
 
     pub fn latest_metrics(&self) -> Option<LiveMetrics> {
         lock(&self.monitor).as_ref().and_then(MonitorHandle::latest)
+    }
+
+    /// Opens the overlay probes on first use (GPU counters, ETW timing).
+    pub fn start_overlay(&self) {
+        lock(&self.overlay).ensure_running();
+    }
+
+    /// Snapshot rendered by the overlay window. Before the first monitor sample
+    /// the metrics are empty rather than invented.
+    pub fn overlay_stats(&self) -> OverlayStats {
+        let metrics = self
+            .latest_metrics()
+            .unwrap_or_else(|| LiveMetrics::empty(1, 0));
+        lock(&self.overlay).sample(&metrics)
     }
 }
 

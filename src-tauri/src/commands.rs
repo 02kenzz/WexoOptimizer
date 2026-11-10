@@ -1,8 +1,12 @@
 use std::time::Duration;
 
 use tauri::{Manager, State};
-use wexo_core::{AppInfo, AppSettings, DiagnosticReport, LiveMetrics, Optimization, SystemProfile, VerificationResult};
+use wexo_core::{
+    AppInfo, AppSettings, DiagnosticReport, LiveMetrics, Optimization, OverlayStats, SystemProfile,
+    VerificationResult,
+};
 use wexo_sysinfo::SystemCollector;
+use wexo_tools::{CleanKind, CleanReport, JobKind, JobSnapshot};
 
 use crate::config;
 use crate::error::CommandError;
@@ -49,6 +53,12 @@ pub fn get_metrics_history(state: State<'_, AppState>) -> Vec<LiveMetrics> {
     state.metrics_history()
 }
 
+/// Snapshot rendered by the performance overlay window.
+#[tauri::command]
+pub fn get_overlay_stats(state: State<'_, AppState>) -> OverlayStats {
+    state.overlay_stats()
+}
+
 /// Current sampling interval, in milliseconds.
 #[tauri::command]
 pub fn get_monitor_interval(state: State<'_, AppState>) -> Option<u64> {
@@ -70,6 +80,7 @@ pub fn get_settings(state: State<'_, AppState>) -> AppSettings {
 
 #[tauri::command]
 pub fn save_settings(
+    app: tauri::AppHandle,
     state: State<'_, AppState>,
     settings: AppSettings,
 ) -> Result<AppSettings, CommandError> {
@@ -84,6 +95,11 @@ pub fn save_settings(
     state.set_monitor_interval(Duration::from_millis(u64::from(
         settings.monitor_interval_ms,
     )));
+
+    if settings.overlay_enabled {
+        state.start_overlay();
+    }
+    crate::overlay::apply(&app, settings.overlay_enabled);
 
     tracing::info!(?settings, "settings updated");
     Ok(settings)
@@ -103,7 +119,9 @@ pub fn show_window(app: tauri::AppHandle) -> Result<(), String> {
 /// Hides the main window to tray.
 #[tauri::command]
 pub fn hide_window(app: tauri::AppHandle) -> Result<(), String> {
-    let window = app.get_webview_window("main").ok_or("main window not found")?;
+    let window = app
+        .get_webview_window("main")
+        .ok_or("main window not found")?;
     window.hide().map_err(|e| e.to_string())
 }
 
@@ -111,7 +129,11 @@ pub fn hide_window(app: tauri::AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn get_optimizations(state: State<'_, AppState>) -> Vec<Optimization> {
     let engine = state.engine.lock().unwrap();
-    let mut items: Vec<Optimization> = engine.registry().iter().map(|def| def.meta.clone()).collect();
+    let mut items: Vec<Optimization> = engine
+        .registry()
+        .iter()
+        .map(|def| def.meta.clone())
+        .collect();
     items.sort_by(|a, b| a.title.cmp(&b.title));
     items
 }
@@ -155,7 +177,9 @@ pub fn apply_optimizations(
     dry_run: bool,
 ) -> Result<ApplyResultResponse, String> {
     let engine = state.engine.lock().unwrap();
-    let result = engine.apply(&optimization_ids, dry_run).map_err(|e| e.to_string())?;
+    let result = engine
+        .apply(&optimization_ids, dry_run)
+        .map_err(|e| e.to_string())?;
 
     let results: Vec<OptimizationResultResponse> = result
         .results
@@ -177,9 +201,13 @@ pub fn apply_optimizations(
 
 /// Returns transaction history.
 #[tauri::command]
-pub fn get_transaction_history(state: State<'_, AppState>, limit: usize) -> Vec<TransactionRecordResponse> {
+pub fn get_transaction_history(
+    state: State<'_, AppState>,
+    limit: usize,
+) -> Vec<TransactionRecordResponse> {
     let engine = state.engine.lock().unwrap();
-    engine.history(limit)
+    engine
+        .history(limit)
         .unwrap_or_default()
         .into_iter()
         .map(|t| TransactionRecordResponse {
@@ -196,9 +224,73 @@ pub fn get_transaction_history(state: State<'_, AppState>, limit: usize) -> Vec<
 
 /// Rolls back a specific transaction.
 #[tauri::command]
-pub fn rollback_transaction(state: State<'_, AppState>, transaction_id: String) -> Result<(), String> {
+pub fn rollback_transaction(
+    state: State<'_, AppState>,
+    transaction_id: String,
+) -> Result<(), String> {
     let engine = state.engine.lock().unwrap();
-    engine.rollback_transaction(&transaction_id).map_err(|e| e.to_string())
+    engine
+        .rollback_transaction(&transaction_id)
+        .map_err(|e| e.to_string())
+}
+
+/// Measures what a cleanup would free. Deletes nothing.
+#[tauri::command(async)]
+pub fn scan_cleanup(kind: String) -> Result<CleanReport, String> {
+    let kind = clean_kind(&kind)?;
+    Ok(wexo_tools::scan(kind))
+}
+
+/// Deletes the files of one cleanup kind and reports what was actually freed.
+#[tauri::command(async)]
+pub fn run_cleanup(kind: String) -> Result<CleanReport, String> {
+    let kind = clean_kind(&kind)?;
+    Ok(wexo_tools::clean(kind))
+}
+
+fn clean_kind(value: &str) -> Result<CleanKind, String> {
+    CleanKind::parse(value).ok_or_else(|| format!("tipo de limpieza desconocido: {value}"))
+}
+
+/// Starts a long-running maintenance command (`sfc`, `dism`, `defrag`, `trim`,
+/// `check-disk`). Returns the initial snapshot; the UI polls `get_tool_job`.
+#[tauri::command]
+pub fn start_tool_job(state: State<'_, AppState>, tool: String) -> Result<JobSnapshot, String> {
+    let kind = JobKind::parse(&tool).ok_or_else(|| format!("herramienta desconocida: {tool}"))?;
+    state.tools.start(kind)
+}
+
+/// Current state of one job, or `null` when the id is unknown.
+#[tauri::command]
+pub fn get_tool_job(state: State<'_, AppState>, id: String) -> Option<JobSnapshot> {
+    state.tools.get(&id)
+}
+
+/// Every remembered job, oldest first. Used to restore the console on mount.
+#[tauri::command]
+pub fn get_tool_jobs(state: State<'_, AppState>) -> Vec<JobSnapshot> {
+    state.tools.all()
+}
+
+/// Asks a running job to stop. Returns `false` when it was not running.
+#[tauri::command]
+pub fn cancel_tool_job(state: State<'_, AppState>, id: String) -> bool {
+    state.tools.cancel(&id)
+}
+
+/// Compacts (`vacuum`) or reindexes the transaction database.
+#[tauri::command(async)]
+pub fn maintain_database(
+    state: State<'_, AppState>,
+    action: String,
+) -> Result<wexo_safety::DatabaseReport, String> {
+    let engine = state.engine.lock().unwrap();
+    let result = match action.as_str() {
+        "vacuum" => engine.vacuum_database(),
+        "reindex" => engine.reindex_database(),
+        other => return Err(format!("acción desconocida: {other}")),
+    };
+    result.map_err(|error| error.to_string())
 }
 
 /// Response types for Tauri commands (serializable).

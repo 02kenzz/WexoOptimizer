@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-11-10
+
+### Added
+- Tools page with real cleanup preview, SFC/DISM/defrag/TRIM/CHKDSK jobs and SQLite maintenance
+- Overlay page plus FPS and GPU sampling (ETW present events, PDH counters)
+- CPU temperature fallback through LibreHardwareMonitor's local web server, started minimized when it is installed
+
+### Changed
+- Monitor reports GPU temperature from NVML alongside per-core load
+
+### Fixed
+- CPU temperature on desktop boards without ACPI thermal zones
+
 ## [Unreleased]
 
 ### Added

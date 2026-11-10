@@ -81,7 +81,7 @@ body,
 body {
   background: var(--bg);
   color: var(--text);
-  font: 400 15px/1.45 var(--font);
+  font: 400 15px / 1.45 var(--font);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -157,7 +157,9 @@ svg {
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
-  background-size: 64px 64px, 64px 64px;
+  background-size:
+    64px 64px,
+    64px 64px;
   mask-image: radial-gradient(120% 90% at 50% 0%, #000 0%, transparent 72%);
   -webkit-mask-image: radial-gradient(120% 90% at 50% 0%, #000 0%, transparent 72%);
 }
@@ -270,7 +272,9 @@ svg {
   border: 1px solid var(--line);
   background: linear-gradient(160deg, var(--panel-hi), var(--panel));
   backdrop-filter: blur(22px) saturate(140%);
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  box-shadow:
+    var(--shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
   overflow: hidden;
 }
 
@@ -437,7 +441,10 @@ svg {
   border: 1px solid transparent;
   color: var(--mut);
   text-align: left;
-  transition: color 0.22s ease, background 0.22s ease, border-color 0.22s ease;
+  transition:
+    color 0.22s ease,
+    background 0.22s ease,
+    border-color 0.22s ease;
 }
 
 .nav-icon {
@@ -448,7 +455,10 @@ svg {
   border-radius: 11px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.035);
-  transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease,
+  transition:
+    background 0.22s ease,
+    color 0.22s ease,
+    border-color 0.22s ease,
     box-shadow 0.22s ease;
   flex: none;
 }
@@ -598,7 +608,10 @@ svg {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.04);
   color: var(--dim);
-  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .search:focus-within {
@@ -680,7 +693,10 @@ svg {
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.04);
   color: var(--mut);
-  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease,
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
     transform 0.2s ease;
 }
 
@@ -745,8 +761,12 @@ svg {
   font-weight: 600;
   letter-spacing: 0.005em;
   white-space: nowrap;
-  transition: transform 0.16s ease, box-shadow 0.24s ease, background 0.24s ease,
-    border-color 0.24s ease, color 0.24s ease;
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.24s ease,
+    background 0.24s ease,
+    border-color 0.24s ease,
+    color 0.24s ease;
 }
 
 .btn:active {
@@ -916,7 +936,9 @@ svg {
   padding: 9px 10px;
   border-radius: 13px;
   border: 1px solid transparent;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .metric:hover {
@@ -1251,7 +1273,9 @@ svg {
   border: 1px solid var(--line);
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
   text-align: left;
-  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.28s ease,
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.28s ease,
     box-shadow 0.28s ease;
   will-change: transform;
 }
@@ -1277,7 +1301,9 @@ svg {
   border: 1px solid rgba(211, 180, 131, 0.2);
   background: rgba(211, 180, 131, 0.09);
   color: var(--accent);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .quick:hover .quick-icon {
@@ -1293,7 +1319,10 @@ svg {
   border-radius: 50%;
   border: 1px solid var(--line);
   color: var(--dim);
-  transition: transform 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .quick:hover .quick-arrow {
@@ -1562,6 +1591,51 @@ svg {
   gap: 8px;
 }
 
+.tool-preview {
+  margin-bottom: 14px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--mut);
+}
+
+.tool-console-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tool-meta-item {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.tool-console-note {
+  margin-bottom: 8px;
+  font-size: 10.5px;
+  color: var(--warn);
+}
+
+.tool-log {
+  max-height: 260px;
+  overflow: auto;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.28);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 2;
+}
+
 .stat-tile {
   padding: 12px 14px;
   border-radius: 13px;
@@ -1604,7 +1678,10 @@ svg {
   background: rgba(255, 255, 255, 0.035);
   color: var(--mut);
   font-size: 11.5px;
-  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .chip-toggle:hover {
@@ -1626,7 +1703,10 @@ svg {
   border-radius: 18px;
   border: 1px solid var(--line);
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.012));
-  transition: border-color 0.25s ease, background 0.25s ease, transform 0.25s ease;
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    transform 0.25s ease;
 }
 
 .opt:hover {
@@ -1636,7 +1716,9 @@ svg {
 .opt.selected {
   border-color: rgba(211, 180, 131, 0.45);
   background: linear-gradient(160deg, rgba(211, 180, 131, 0.12), rgba(211, 180, 131, 0.025));
-  box-shadow: inset 0 0 0 1px rgba(211, 180, 131, 0.15), 0 20px 40px -34px rgba(211, 180, 131, 0.9);
+  box-shadow:
+    inset 0 0 0 1px rgba(211, 180, 131, 0.15),
+    0 20px 40px -34px rgba(211, 180, 131, 0.9);
 }
 
 .opt-check {
@@ -1889,7 +1971,10 @@ svg {
   border-radius: 999px;
   border: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.08);
-  transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
   flex: none;
 }
 
@@ -1912,7 +1997,9 @@ svg {
   background: #ece7dd;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   transform: translateX(2px);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease;
+  transition:
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background 0.2s ease;
 }
 
 .switch[data-state="checked"] .switch-thumb {
@@ -1972,7 +2059,7 @@ svg {
 
 .tiles {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -1981,7 +2068,9 @@ svg {
   border-radius: 17px;
   border: 1px solid var(--line);
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.012));
-  transition: transform 0.25s ease, border-color 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .tile:hover {
@@ -2244,6 +2333,73 @@ svg {
 }
 
 /* ------------------------------------------------------------------ */
+/* Performance overlay                                                 */
+/* ------------------------------------------------------------------ */
+
+.overlay-stage {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.overlay-bar {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.42);
+  color: #fff;
+  font-family: var(--mono);
+  line-height: 1;
+  transition: opacity 400ms ease;
+}
+
+.overlay-bar[data-stale="true"] {
+  opacity: 0.35;
+}
+
+.overlay-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.overlay-label {
+  color: rgba(255, 255, 255, 0.36);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.overlay-value {
+  min-width: 4ch;
+  color: rgba(255, 255, 255, 0.92);
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.overlay-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ */
 /* Small utilities used by pages                                       */
 /* ------------------------------------------------------------------ */
 
@@ -2281,6 +2437,10 @@ svg {
 
   .cols-4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tiles {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -2446,4 +2606,3 @@ svg {
     transform: none;
   }
 }
-

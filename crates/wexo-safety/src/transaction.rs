@@ -50,6 +50,18 @@ pub enum TransactionStatus {
     Failed,
 }
 
+/// Result of a database maintenance pass.
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DatabaseReport {
+    /// Size of the database file before the operation.
+    pub before_bytes: u64,
+    /// Size after it, which is smaller after a `VACUUM`.
+    pub after_bytes: u64,
+    /// Rows still stored in the transaction table.
+    pub transactions: u64,
+}
+
 /// SQLite-backed transaction log.
 pub struct TransactionLog {
     conn: Arc<Mutex<Connection>>,
@@ -174,6 +186,54 @@ impl TransactionLog {
         info!(snapshot_id = %snapshot_id, "snapshot restored");
         Ok(())
     }
+
+    /// Size of the database in bytes, straight from SQLite's page counters.
+    pub fn size_bytes(&self) -> u64 {
+        let conn = self.conn.lock();
+        let page_count: i64 = conn
+            .query_row("PRAGMA page_count", [], |row| row.get(0))
+            .unwrap_or(0);
+        let page_size: i64 = conn
+            .query_row("PRAGMA page_size", [], |row| row.get(0))
+            .unwrap_or(0);
+        (page_count.max(0) as u64) * (page_size.max(0) as u64)
+    }
+
+    /// Number of stored transactions.
+    pub fn count(&self) -> u64 {
+        let conn = self.conn.lock();
+        conn.query_row("SELECT COUNT(*) FROM transactions", [], |row| row.get::<_, i64>(0))
+            .unwrap_or(0)
+            .max(0) as u64
+    }
+
+    /// Rewrites the file without free pages (`VACUUM`), which is what actually
+    /// shrinks it after many applied/rolled-back rows.
+    pub fn vacuum(&self) -> Result<DatabaseReport, TransactionError> {
+        let before_bytes = self.size_bytes();
+        self.conn.lock().execute_batch("VACUUM;")?;
+        let report = DatabaseReport {
+            before_bytes,
+            after_bytes: self.size_bytes(),
+            transactions: self.count(),
+        };
+        info!(before = report.before_bytes, after = report.after_bytes, "database vacuumed");
+        Ok(report)
+    }
+
+    /// Rebuilds every index (`REINDEX`). Harmless on a healthy file and the
+    /// documented fix for a corrupted index.
+    pub fn reindex(&self) -> Result<DatabaseReport, TransactionError> {
+        let before_bytes = self.size_bytes();
+        self.conn.lock().execute_batch("REINDEX;")?;
+        let report = DatabaseReport {
+            before_bytes,
+            after_bytes: self.size_bytes(),
+            transactions: self.count(),
+        };
+        info!(after = report.after_bytes, "database reindexed");
+        Ok(report)
+    }
 }
 
 fn row_to_record(row: &rusqlite::Row) -> SqlResult<TransactionRecord> {
@@ -254,5 +314,28 @@ mod tests {
 
         let updated = log.get(&record.id).unwrap().unwrap();
         assert_eq!(updated.status, TransactionStatus::RolledBack);
+    }
+
+    #[test]
+    fn vacuum_and_reindex_report_the_real_database() {
+        let dir = tempdir().unwrap();
+        let log = TransactionLog::new(dir.path()).unwrap();
+        log.record(
+            &["opt1".to_string()],
+            TransactionStatus::Applied,
+            true,
+            None,
+            None,
+        )
+        .unwrap();
+
+        let vacuumed = log.vacuum().unwrap();
+        assert!(vacuumed.before_bytes > 0);
+        assert!(vacuumed.after_bytes > 0);
+        assert_eq!(vacuumed.transactions, 1);
+
+        let reindexed = log.reindex().unwrap();
+        assert!(reindexed.after_bytes > 0);
+        assert_eq!(reindexed.transactions, 1);
     }
 }

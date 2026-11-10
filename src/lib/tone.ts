@@ -29,3 +29,10 @@ export function usageTone(percent: number): "accent" | "warn" | "danger" {
   if (percent >= 75) return "warn";
   return "accent";
 }
+
+/** Temperature tone: a CPU is fine up to ~80 °C and throttles near 95 °C. */
+export function thermalTone(celsius: number): "accent" | "warn" | "danger" {
+  if (celsius >= 90) return "danger";
+  if (celsius >= 80) return "warn";
+  return "accent";
+}

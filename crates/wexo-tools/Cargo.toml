@@ -1,0 +1,21 @@
+[package]
+name = "wexo-tools"
+description = "Maintenance tools: cleanup, repair jobs and database upkeep"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+tempfile = "3"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_Globalization",
+] }

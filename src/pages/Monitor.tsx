@@ -1,4 +1,4 @@
-import { Activity, Cpu, HardDrive, MemoryStick, Network, RefreshCw } from "lucide-react";
+import { Activity, Cpu, HardDrive, MemoryStick, Network, RefreshCw, Thermometer } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { LiveChart } from "@/components/LiveChart";
@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Gauge } from "@/components/ui/Gauge";
 import { Meter } from "@/components/ui/Meter";
 import { useLiveMetrics } from "@/hooks/useLiveMetrics";
-import { usageTone } from "@/lib/tone";
+import { thermalTone, usageTone } from "@/lib/tone";
 import { clamp, cn, formatBytes, formatDuration, formatRate } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
 
@@ -20,6 +20,7 @@ function LiveTile({
   unit,
   percent,
   hint,
+  tone,
 }: {
   icon: typeof Cpu;
   label: string;
@@ -27,6 +28,7 @@ function LiveTile({
   unit?: string;
   percent: number;
   hint?: string;
+  tone?: "accent" | "warn" | "danger";
 }) {
   return (
     <div className="tile">
@@ -42,7 +44,7 @@ function LiveTile({
         {unit ? <small>{unit}</small> : null}
       </div>
       <div className="tile-hint">{hint ?? "\u00a0"}</div>
-      <Meter value={percent} tone={usageTone(percent)} height={5} />
+      <Meter value={percent} tone={tone ?? usageTone(percent)} height={5} />
     </div>
   );
 }
@@ -98,6 +100,8 @@ export function Monitor() {
         <div className="panel" style={{ height: 130, opacity: 0.4 }} />
         <div className="panel" style={{ height: 130, opacity: 0.3 }} />
         <div className="panel" style={{ height: 130, opacity: 0.2 }} />
+        <div className="panel" style={{ height: 130, opacity: 0.15 }} />
+        <div className="panel" style={{ height: 130, opacity: 0.1 }} />
       </div>
     );
   }
@@ -121,6 +125,8 @@ export function Monitor() {
   const cpu = latest?.cpuPercent ?? 0;
   const memory = latest?.memoryPercent ?? 0;
   const diskBusy = latest?.diskBusyPercent ?? 0;
+  const cpuTemp = latest?.cpuTempCelsius ?? null;
+  const gpuTemp = latest?.gpuTempCelsius ?? null;
 
   return (
     <section className="view" id="monitor">
@@ -162,6 +168,24 @@ export function Monitor() {
           value={latest ? formatRate(latest.networkRxBytesPerSec) : "—"}
           percent={Math.min(100, (latest?.networkRxBytesPerSec ?? 0) / 1_000_000)}
           hint={latest ? t("monitor.upload", { value: formatRate(latest.networkTxBytesPerSec) }) : undefined}
+        />
+        <LiveTile
+          icon={Thermometer}
+          label={t("monitor.liveCpuTemp")}
+          value={cpuTemp === null ? "—" : cpuTemp.toFixed(0)}
+          unit={cpuTemp === null ? undefined : "°C"}
+          percent={cpuTemp ?? 0}
+          tone={cpuTemp === null ? undefined : thermalTone(cpuTemp)}
+          hint={cpuTemp === null ? t("monitor.tempUnavailable") : undefined}
+        />
+        <LiveTile
+          icon={Thermometer}
+          label={t("monitor.liveGpuTemp")}
+          value={gpuTemp === null ? "—" : gpuTemp.toFixed(0)}
+          unit={gpuTemp === null ? undefined : "°C"}
+          percent={gpuTemp ?? 0}
+          tone={gpuTemp === null ? undefined : thermalTone(gpuTemp)}
+          hint={gpuTemp === null ? t("monitor.tempUnavailable") : undefined}
         />
       </div>
 

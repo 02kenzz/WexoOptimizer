@@ -4,14 +4,14 @@ mod elevation;
 mod error;
 mod events;
 mod logging;
+mod overlay;
 mod state;
 
 use state::AppState;
 use tauri::{
-    LogicalSize, Manager, Runtime, Size, WebviewWindow,
     menu::{MenuBuilder, MenuItemBuilder},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    WindowEvent,
+    LogicalSize, Manager, Runtime, Size, WebviewWindow, WindowEvent,
 };
 
 /// Preferred and minimum main-window size, in logical pixels.
@@ -53,6 +53,13 @@ pub fn run() {
             // Create system tray
             create_tray(app.handle().clone())?;
 
+            // Reopen the performance overlay when it was left enabled.
+            let state = app.state::<AppState>();
+            if state.settings_snapshot().overlay_enabled {
+                state.start_overlay();
+                overlay::apply(app.handle(), true);
+            }
+
             // Handle window close event (minimize to tray if enabled)
             if let Some(window) = app.get_webview_window("main") {
                 fit_main_window(&window);
@@ -79,6 +86,7 @@ pub fn run() {
             commands::get_live_metrics,
             commands::get_metrics_history,
             commands::get_monitor_interval,
+            commands::get_overlay_stats,
             commands::run_diagnostics,
             commands::get_settings,
             commands::save_settings,
@@ -88,6 +96,13 @@ pub fn run() {
             commands::apply_optimizations,
             commands::get_transaction_history,
             commands::rollback_transaction,
+            commands::scan_cleanup,
+            commands::run_cleanup,
+            commands::start_tool_job,
+            commands::get_tool_job,
+            commands::get_tool_jobs,
+            commands::cancel_tool_job,
+            commands::maintain_database,
             commands::open_logs_dir,
             commands::relaunch_as_admin,
         ])
@@ -115,12 +130,20 @@ fn fit_main_window<R: Runtime>(window: &WebviewWindow<R>) {
     let width = IDEAL_WIDTH.min(available_width);
     let height = IDEAL_HEIGHT.min(available_height);
 
-    tracing::info!(width, height, scale = monitor.scale_factor(), "main window fitted to display");
+    tracing::info!(
+        width,
+        height,
+        scale = monitor.scale_factor(),
+        "main window fitted to display"
+    );
     let _ = window.set_size(Size::Logical(LogicalSize::new(width, height)));
     let _ = window.center();
 }
 
 /// Creates the system tray with Show/Quit menu.
+///
+/// The tray is built here instead of in `tauri.conf.json`: declaring it in both
+/// places makes Tauri create two icons with the same id.
 fn create_tray<R: Runtime>(handle: tauri::AppHandle<R>) -> tauri::Result<()> {
     let show_item = MenuItemBuilder::new("Mostrar")
         .id("show")
@@ -140,6 +163,8 @@ fn create_tray<R: Runtime>(handle: tauri::AppHandle<R>) -> tauri::Result<()> {
         .icon(handle.default_window_icon().cloned().unwrap())
         .icon_as_template(true)
         .menu(&menu)
+        // Left click opens the window; the menu stays on right click.
+        .show_menu_on_left_click(false)
         .tooltip("Wexo Optimizer")
         .on_menu_event(move |handle, event| match event.id.as_ref() {
             "show" => {
