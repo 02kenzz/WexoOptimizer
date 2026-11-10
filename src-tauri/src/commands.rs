@@ -111,7 +111,40 @@ pub fn hide_window(app: tauri::AppHandle) -> Result<(), String> {
 #[tauri::command]
 pub fn get_optimizations(state: State<'_, AppState>) -> Vec<Optimization> {
     let engine = state.engine.lock().unwrap();
-    engine.registry().iter().map(|def| def.meta.clone()).collect()
+    let mut items: Vec<Optimization> = engine.registry().iter().map(|def| def.meta.clone()).collect();
+    items.sort_by(|a, b| a.title.cmp(&b.title));
+    items
+}
+
+/// Opens the log directory in the platform file manager.
+#[tauri::command]
+pub fn open_logs_dir(state: State<'_, AppState>) -> Result<(), String> {
+    let dir = &state.paths.logs_dir;
+
+    #[cfg(windows)]
+    let opened = std::process::Command::new("explorer.exe").arg(dir).spawn();
+    #[cfg(target_os = "linux")]
+    let opened = std::process::Command::new("xdg-open").arg(dir).spawn();
+    #[cfg(not(any(windows, target_os = "linux")))]
+    let opened = std::process::Command::new("open").arg(dir).spawn();
+
+    opened.map(|_| ()).map_err(|error| error.to_string())
+}
+
+/// Restarts the application elevated so admin-only tweaks can run.
+///
+/// The app already elevates itself on startup; this is the retry path for a
+/// user who declined the UAC/polkit prompt.
+#[tauri::command]
+pub fn relaunch_as_admin(app: tauri::AppHandle) -> Result<(), String> {
+    if crate::elevation::already_elevated() {
+        return Err("la aplicación ya se está ejecutando como administrador".to_string());
+    }
+    if !crate::elevation::relaunch_elevated() {
+        return Err("no se pudo solicitar la elevación".to_string());
+    }
+    app.exit(0);
+    Ok(())
 }
 
 /// Applies selected optimizations atomically with safety checks.

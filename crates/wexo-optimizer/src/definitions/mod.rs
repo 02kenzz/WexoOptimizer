@@ -3,9 +3,12 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 use wexo_core::{Applicability, Optimization};
-use wexo_sysinfo::{is_elevated, SystemCollector};
+use wexo_sysinfo::SystemCollector;
 
+#[cfg(windows)]
 pub mod builtins;
+#[cfg(target_os = "linux")]
+pub mod builtins_linux;
 
 /// A runnable optimization with executable functions.
 pub struct OptimizationDef {
@@ -83,8 +86,10 @@ impl OptimizationDefBuilder {
 }
 
 /// Checks if an optimization is available on the current system.
-pub fn check_availability(id: &str, spec: &Applicability) -> bool {
-    // Check OS build
+pub fn check_availability(_id: &str, spec: &Applicability) -> bool {
+    // Registry edits are gated by Windows build number; Linux definitions leave
+    // `os_min_build` empty because their checks are tool-based.
+    #[cfg(windows)]
     if let Some(min_build) = &spec.os_min_build {
         if let Ok(current) = get_os_build() {
             if current < min_build.parse().unwrap_or(0) {
@@ -92,20 +97,12 @@ pub fn check_availability(id: &str, spec: &Applicability) -> bool {
             }
         }
     }
+    #[cfg(not(windows))]
+    let _ = &spec.os_min_build;
 
-    // Check hardware filters (simplified - in M4 the rules engine handles this)
+    // Hardware/tool filters decide whether the change means anything here.
     for filter in &spec.hardware_filters {
         if !evaluate_hardware_filter(filter) {
-            return false;
-        }
-    }
-
-    // Check admin requirement for certain categories
-    if matches!(
-        id,
-        "disable-sysmain" | "disable-diagtrack" | "power-plan-ultimate" | "tcp-autotuning" | "enable-hags" | "ntfs-last-access"
-    ) {
-        if !is_elevated() {
             return false;
         }
     }
@@ -113,6 +110,7 @@ pub fn check_availability(id: &str, spec: &Applicability) -> bool {
     true
 }
 
+#[cfg(windows)]
 fn get_os_build() -> Result<u32, String> {
     use winreg::enums::*;
     use winreg::RegKey;
@@ -128,7 +126,6 @@ fn get_os_build() -> Result<u32, String> {
 }
 
 fn evaluate_hardware_filter(filter: &str) -> bool {
-    // Simplified evaluation - in M4 this uses the rules engine
     if filter.contains("disk.kind == 'nvme'") || filter.contains("disk.kind == 'ssd'") {
         return is_nvme_or_ssd_system_disk();
     }
@@ -138,6 +135,21 @@ fn evaluate_hardware_filter(filter: &str) -> bool {
     if filter.contains("gpu.driver_model == 'wddm2'") {
         return is_wddm2_or_later();
     }
+    if filter.contains("platform.linux") {
+        return cfg!(target_os = "linux");
+    }
+    if filter.contains("desktop.gnome") {
+        return has_gnome_interface();
+    }
+    if filter.contains("service.bluetooth") {
+        return has_systemd_unit("bluetooth.service");
+    }
+    if filter.contains("systemd") {
+        return has_systemd();
+    }
+    if filter.contains("writable.sysctl") {
+        return std::path::Path::new("/proc/sys/vm/swappiness").exists();
+    }
     true
 }
 
@@ -145,39 +157,65 @@ fn is_nvme_or_ssd_system_disk() -> bool {
     let collector = wexo_sysinfo::LiveCollector::new();
     let profile = SystemCollector::profile(&collector);
     profile.disks.iter().any(|d| {
-        d.mount_point.to_uppercase().starts_with("C:")
+        is_system_mount(&d.mount_point)
             && (d.kind == wexo_core::DiskKind::Nvme || d.kind == wexo_core::DiskKind::Ssd)
     })
 }
 
+fn is_system_mount(mount_point: &str) -> bool {
+    #[cfg(windows)]
+    {
+        mount_point.to_uppercase().starts_with("C:")
+    }
+    #[cfg(not(windows))]
+    {
+        mount_point == "/"
+    }
+}
+
+#[cfg(windows)]
 fn is_desktop() -> bool {
     use winreg::enums::*;
     use winreg::RegKey;
 
     let hklm = RegKey::predef(winreg::enums::HKEY_LOCAL_MACHINE);
     if let Ok(key) = hklm.open_subkey_with_flags("SYSTEM\\CurrentControlSet\\Control\\SystemInformation", KEY_READ) {
-        if let Ok(chassis) = key.get_value::<String, _>("ChassisType") {
-            // 3 = Desktop, 6 = Mini Tower, 7 = Tower
-            if let Ok(t) = chassis.parse::<u32>() {
-                return matches!(t, 3 | 6 | 7 | 15);
-            }
+        if let Ok(chassis) = key.get_value::<u32, _>("ChassisType") {
+            // 3-7 = sobremesa/torre, 15/16/23/24 = chasis compactos o de rack
+            return matches!(chassis, 3 | 4 | 5 | 6 | 7 | 15 | 16 | 23 | 24);
         }
     }
     // Fallback: assume desktop if we have a battery
     !has_battery()
 }
 
+#[cfg(not(windows))]
+fn is_desktop() -> bool {
+    !has_battery()
+}
+
+#[cfg(windows)]
 fn has_battery() -> bool {
     use winreg::enums::*;
     use winreg::RegKey;
 
     let hklm = RegKey::predef(winreg::enums::HKEY_LOCAL_MACHINE);
-    if let Ok(_key) = hklm.open_subkey_with_flags("SYSTEM\\CurrentControlSet\\Control\\Power\\PowerSettings", KEY_READ) {
-        return true; // Simplified
-    }
-    false
+    hklm.open_subkey_with_flags("SYSTEM\\CurrentControlSet\\Services\\CmBatt", KEY_READ)
+        .is_ok()
 }
 
+#[cfg(not(windows))]
+fn has_battery() -> bool {
+    std::fs::read_dir("/sys/class/power_supply")
+        .map(|entries| {
+            entries
+                .filter_map(Result::ok)
+                .any(|entry| entry.file_name().to_string_lossy().starts_with("BAT"))
+        })
+        .unwrap_or(false)
+}
+
+#[cfg(windows)]
 fn is_wddm2_or_later() -> bool {
     // Check WDDM version via registry
     use winreg::enums::*;
@@ -185,12 +223,60 @@ fn is_wddm2_or_later() -> bool {
 
     let hklm = RegKey::predef(winreg::enums::HKEY_LOCAL_MACHINE);
     if let Ok(key) = hklm.open_subkey_with_flags("SYSTEM\\CurrentControlSet\\Control\\GraphicsDrivers", KEY_READ) {
-        if let Ok(version) = key.get_value::<String, _>("WddmVersion") {
-            if let Ok(v) = version.parse::<f32>() {
-                return v >= 2.0;
-            }
+        if let Ok(version) = key.get_value::<u32, _>("WddmVersion") {
+            // WDDM 2.0 y posteriores codifican la versión mayor en la palabra alta.
+            return version >= 0x2000;
         }
     }
+    // Windows moderno usa WDDM 2.x: no ocultar el ajuste si la lectura falla.
+    true
+}
+
+#[cfg(not(windows))]
+fn is_wddm2_or_later() -> bool {
+    // WDDM is a Windows concept; elsewhere the filter does not apply.
+    true
+}
+
+#[cfg(not(windows))]
+fn has_gnome_interface() -> bool {
+    std::process::Command::new("gsettings")
+        .args(["list-schemas"])
+        .output()
+        .map(|output| {
+            String::from_utf8_lossy(&output.stdout)
+                .lines()
+                .any(|line| line.trim() == "org.gnome.desktop.interface")
+        })
+        .unwrap_or(false)
+}
+
+#[cfg(windows)]
+fn has_gnome_interface() -> bool {
+    false
+}
+
+#[cfg(not(windows))]
+fn has_systemd() -> bool {
+    std::path::Path::new("/run/systemd/system").is_dir()
+}
+
+#[cfg(windows)]
+fn has_systemd() -> bool {
+    false
+}
+
+#[cfg(not(windows))]
+fn has_systemd_unit(unit: &str) -> bool {
+    std::process::Command::new("systemctl")
+        .args(["list-unit-files", unit])
+        .output()
+        .map(|output| String::from_utf8_lossy(&output.stdout).contains(unit))
+        .unwrap_or(false)
+}
+
+#[cfg(windows)]
+fn has_systemd_unit(_unit: &str) -> bool {
     false
 }
 

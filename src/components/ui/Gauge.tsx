@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 import { cn } from "@/lib/utils";
 
 type Tone = "accent" | "accent-2" | "accent-3" | "ok" | "warn" | "danger";
@@ -29,8 +31,8 @@ function gaugeColor(value: number, tone: Tone): string {
   if (tone !== "accent" && tone !== "accent-2" && tone !== "accent-3") {
     return TONE_COLORS[tone];
   }
-  if (value >= 75) return "var(--danger)";
-  if (value >= 50) return "var(--warn)";
+  if (value >= 90) return "var(--danger)";
+  if (value >= 75) return "var(--warn)";
   return TONE_COLORS[tone];
 }
 
@@ -38,7 +40,7 @@ export function Gauge({
   value,
   label,
   unit = "%",
-  size = 160,
+  size = 170,
   strokeWidth = 10,
   tone = "accent",
   showValue = true,
@@ -46,32 +48,35 @@ export function Gauge({
   className,
 }: GaugeProps) {
   const clamped = Math.max(0, Math.min(100, value));
-  const radius = (size - strokeWidth) / 2;
+  const radius = (size - strokeWidth) / 2 - 4;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - clamped / 100);
   const color = gaugeColor(clamped, tone);
 
-  const ringStyle: React.CSSProperties = {
-    "--circumference": `${circumference}px`,
-    "--target-offset": `${offset}px`,
-    transition: animated ? "stroke-dashoffset 1.2s cubic-bezier(0.22, 1, 0.36, 1)" : "none",
-  };
+  const rawId = useId();
+  const gradientId = `gauge-${rawId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
   return (
     <div
-      className={cn("relative inline-flex flex-col items-center", className)}
-      style={{ width: size, height: size + 48 }}
+      className={cn("gauge", className)}
+      style={{ width: size }}
       role="img"
       aria-label={`${label}: ${clamped}${unit}`}
     >
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg viewBox={`0 0 ${size} ${size}`} className="size-full -rotate-90" aria-hidden="true">
+      <div className="gauge-ring" style={{ width: size, height: size }}>
+        <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} className="-rotate-90">
+          <defs>
+            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={color} stopOpacity="0.55" />
+              <stop offset="100%" stopColor={color} />
+            </linearGradient>
+          </defs>
           <circle
             cx={size / 2}
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke="var(--line)"
+            stroke="rgba(255,255,255,0.07)"
             strokeWidth={strokeWidth}
           />
           <circle
@@ -79,44 +84,47 @@ export function Gauge({
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke={color}
+            stroke={`url(#${gradientId})`}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={circumference}
-            strokeDashoffset={animated ? circumference : offset}
-            style={ringStyle}
-            className={animated ? "animate-ring-draw" : ""}
+            strokeDashoffset={offset}
+            style={{
+              transition: animated ? "stroke-dashoffset 1s cubic-bezier(0.22, 1, 0.36, 1)" : "none",
+              filter: `drop-shadow(0 0 9px ${color})`,
+            }}
           />
-          {clamped > 95 && (
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius + 2}
-              fill="none"
-              stroke={color}
-              strokeWidth={2}
-              strokeDasharray="4 8"
-              opacity={0.6}
-              className="animate-spin"
-            />
-          )}
         </svg>
 
-        {showValue && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-bold tabular-nums tracking-tight text-text">
+        {showValue ? (
+          <div className="gauge-center">
+            <span
+              style={{
+                fontSize: size * 0.2,
+                fontWeight: 650,
+                letterSpacing: "-0.04em",
+                fontVariantNumeric: "tabular-nums",
+                lineHeight: 1,
+              }}
+            >
               {clamped.toFixed(clamped < 10 ? 1 : 0)}
             </span>
-            <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-text-dim">
+            <span
+              style={{
+                marginTop: 3,
+                fontSize: 9,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "var(--dim)",
+              }}
+            >
               {unit}
             </span>
           </div>
-        )}
+        ) : null}
       </div>
 
-      <div className="mt-3 text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-text-dim">{label}</p>
-      </div>
+      <p className="gauge-label">{label}</p>
     </div>
   );
 }
@@ -134,16 +142,11 @@ interface GaugeClusterProps {
   className?: string;
 }
 
-export function GaugeCluster({
-  gauges,
-  size = 140,
-  gap = 24,
-  className,
-}: GaugeClusterProps) {
+export function GaugeCluster({ gauges, size = 150, gap = 24, className }: GaugeClusterProps) {
   return (
     <div
-      className={cn("flex items-center justify-center gap-4 flex-wrap", className)}
-      style={{ gap, "--gauge-size": `${size}px` }}
+      className={cn("gauges", className)}
+      style={{ gap }}
       role="list"
       aria-label="System metrics"
     >
@@ -155,7 +158,7 @@ export function GaugeCluster({
           unit={gauge.unit}
           size={size}
           tone={gauge.tone}
-          strokeWidth={8}
+          strokeWidth={9}
         />
       ))}
     </div>

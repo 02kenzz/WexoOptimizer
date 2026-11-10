@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Wexo Optimizer">
+  <defs>
+    <linearGradient id="tile" x1="0.1" y1="0" x2="0.75" y2="1">
+      <stop offset="0" stop-color="#34302c"/><stop offset="0.45" stop-color="#221f1c"/><stop offset="1" stop-color="#100f0e"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.14" r="0.8">
+      <stop offset="0" stop-color="#cdb896" stop-opacity="0.38"/><stop offset="0.55" stop-color="#b39d7c" stop-opacity="0.1"/><stop offset="1" stop-color="#b39d7c" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bevel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.34"/><stop offset="0.5" stop-color="#ffffff" stop-opacity="0.04"/><stop offset="1" stop-color="#050b18" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0.15" y1="0" x2="0.7" y2="1">
+      <stop offset="0" stop-color="#f8f4ec"/><stop offset="0.42" stop-color="#efe8db"/><stop offset="0.76" stop-color="#dbd2c2"/><stop offset="1" stop-color="#bfb6a5"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="232" fill="url(#tile)"/>
+  <rect width="1024" height="1024" rx="232" fill="url(#glow)"/>
+  <rect x="12" y="12" width="1000" height="1000" rx="221" fill="none" stroke="url(#bevel)" stroke-width="14"/>
+  <g transform="translate(3 27)"><path d="M 301.6 363.6 L 301.6 363.6 L 433.7 777.0 L 528.0 457.0 L 622.3 777.0 L 754.4 363.6 L 780.6 366.8 L 740.7 259.2 L 649.8 329.2 L 673.6 340.4 L 673.6 340.4 L 621.7 567.0 L 528.0 247.0 L 434.3 567.0 L 382.4 340.4 L 406.2 329.2 L 315.3 259.2 L 275.4 366.8 Z" fill="#141210" fill-opacity="0.55"/></g>
+  <path d="M 301.6 363.6 L 301.6 363.6 L 433.7 777.0 L 528.0 457.0 L 622.3 777.0 L 754.4 363.6 L 780.6 366.8 L 740.7 259.2 L 649.8 329.2 L 673.6 340.4 L 673.6 340.4 L 621.7 567.0 L 528.0 247.0 L 434.3 567.0 L 382.4 340.4 L 406.2 329.2 L 315.3 259.2 L 275.4 366.8 Z" fill="url(#metal)"/>
+</svg>

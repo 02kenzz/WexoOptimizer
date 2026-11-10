@@ -20,6 +20,8 @@ pub struct Optimization {
     pub applies_to: Applicability,
     pub snapshot: SnapshotSpec,
     pub available: bool,
+    /// True when applying the change needs an elevated process.
+    pub requires_admin: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

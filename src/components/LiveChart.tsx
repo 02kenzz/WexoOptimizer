@@ -7,7 +7,7 @@ import "uplot/dist/uPlot.min.css";
 import { useAppStore } from "@/stores/appStore";
 import type { LiveMetrics } from "@/types";
 
-const CHART_HEIGHT = 240;
+const CHART_HEIGHT = 250;
 
 function cssVar(name: string, fallback: string): string {
   if (typeof document === "undefined") return fallback;
@@ -52,18 +52,24 @@ export function LiveChart({ samples }: { samples: LiveMetrics[] }) {
 
     // Fallbacks only apply before the theme stylesheet is ready; `theme` is a
     // dependency so the plot is rebuilt when the palette changes.
-    const text = cssVar("--mut", "#9b9ba4");
-    const grid = cssVar("--line", "rgba(255, 255, 255, 0.09)");
-    const accent = cssVar("--accent", "#6d5dfb");
-    const blue = cssVar("--accent-2", "#3b82f6");
-    const warn = cssVar("--warn", "#f59e0b");
+    const text = cssVar("--dim", "#7b756c");
+    const grid = cssVar("--line", "rgba(255, 255, 255, 0.075)");
+    const accent = cssVar("--accent", "#d3b483");
+    const blue = cssVar("--accent-2", "#c08552");
+    const warn = cssVar("--warn", "#ffc266");
 
     const options: uPlot.Options = {
       width: Math.max(container.clientWidth, 320),
       height: CHART_HEIGHT,
-      padding: [12, 12, 0, 0],
+      padding: [14, 14, 0, 0],
       legend: { show: false },
-      cursor: { show: true, x: true, y: false, points: { show: false } },
+      cursor: {
+        show: true,
+        x: true,
+        y: false,
+        points: { show: false },
+        drag: { x: false, y: false, setScale: false },
+      },
       scales: {
         x: { time: true },
         y: { auto: false, range: [0, 100] },
@@ -71,24 +77,36 @@ export function LiveChart({ samples }: { samples: LiveMetrics[] }) {
       axes: [
         {
           stroke: text,
-          font: "11px Inter, system-ui, sans-serif",
+          font: "10px Inter, system-ui, sans-serif",
           grid: { stroke: grid, width: 1 },
-          ticks: { stroke: grid, width: 1 },
+          ticks: { stroke: grid, width: 1, size: 4 },
         },
         {
           stroke: text,
-          font: "11px Inter, system-ui, sans-serif",
-          size: 44,
+          font: "10px Inter, system-ui, sans-serif",
+          size: 40,
           grid: { stroke: grid, width: 1 },
-          ticks: { stroke: grid, width: 1 },
+          ticks: { stroke: grid, width: 1, size: 4 },
           values: (_self, splits) => splits.map((value) => `${value}%`),
         },
       ],
       series: [
         { label: t("monitor.chartTime") },
-        { label: t("monitor.chartCpu"), stroke: accent, width: 2, points: { show: false } },
-        { label: t("monitor.chartMemory"), stroke: blue, width: 2, points: { show: false } },
-        { label: t("monitor.chartDisk"), stroke: warn, width: 2, points: { show: false } },
+        {
+          label: t("monitor.chartCpu"),
+          stroke: accent,
+          width: 2,
+          points: { show: false },
+          fill: "rgba(211, 180, 131, 0.10)",
+        },
+        {
+          label: t("monitor.chartMemory"),
+          stroke: blue,
+          width: 1.6,
+          points: { show: false },
+          fill: "rgba(176, 112, 63, 0.06)",
+        },
+        { label: t("monitor.chartDisk"), stroke: warn, width: 1.4, points: { show: false } },
       ],
     };
 
@@ -114,5 +132,5 @@ export function LiveChart({ samples }: { samples: LiveMetrics[] }) {
     plotRef.current?.setData(buildData(samples));
   }, [samples]);
 
-  return <div ref={containerRef} className="w-full" />;
+  return <div ref={containerRef} style={{ width: "100%" }} />;
 }

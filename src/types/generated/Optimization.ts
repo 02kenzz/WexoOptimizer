@@ -14,4 +14,8 @@ export type Optimization = {
 /**
  * Stable kebab-case identifier. Never reused once shipped.
  */
-id: string, category: Category, title: string, description: string, rationale: string, risk: RiskLevel, requiresReboot: boolean, appliesTo: Applicability, snapshot: SnapshotSpec, available: boolean, };
+id: string, category: Category, title: string, description: string, rationale: string, risk: RiskLevel, requiresReboot: boolean, appliesTo: Applicability, snapshot: SnapshotSpec, available: boolean, 
+/**
+ * True when applying the change needs an elevated process.
+ */
+requiresAdmin: boolean, };

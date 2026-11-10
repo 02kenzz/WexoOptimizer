@@ -2,7 +2,7 @@ import { Database, History as HistoryIcon, ShieldCheck, Undo2 } from "lucide-rea
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/Badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 export function History() {
@@ -10,51 +10,63 @@ export function History() {
 
   return (
     <section className="view" id="historial">
-      <div className="grid gap-4 lg:grid-cols-[1.5fr_0.9fr]">
-        <Card>
-          <EmptyState
-            icon={HistoryIcon}
-            title={t("history.emptyTitle")}
-            description={t("history.emptyHint")}
-            className="border-0 py-16"
-          />
+      <div className="grid cols-hero">
+        <Card style={{ padding: 0 }}>
+          <div style={{ padding: "40px 24px" }}>
+            <EmptyState
+              icon={HistoryIcon}
+              title={t("history.emptyTitle")}
+              description={t("history.emptyHint")}
+            />
+          </div>
         </Card>
 
-        <div className="space-y-3">
+        <div className="grid" style={{ gap: 14 }}>
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Undo2 className="size-4 text-accent" aria-hidden />
+            <div className="panel-head">
+              <h3 className="panel-title">
+                <Undo2 size={14} strokeWidth={2} aria-hidden />
                 {t("history.rollbackTitle")}
-              </CardTitle>
+              </h3>
               <Badge tone="accent">M2</Badge>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs leading-relaxed text-mut">{t("history.rollbackHint")}</p>
-              <div className="mt-3 flex items-center gap-2 rounded-lg border border-ok/25 bg-ok/5 px-3 py-2 text-[11px] text-ok">
-                <ShieldCheck className="size-3.5" aria-hidden />
-                SHA256 · SQLite · dry-run
-              </div>
-            </CardContent>
+            </div>
+            <p style={{ fontSize: 11.5, lineHeight: 1.6, color: "var(--mut)" }}>
+              {t("history.rollbackHint")}
+            </p>
+            <div
+              style={{
+                marginTop: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "9px 11px",
+                borderRadius: 11,
+                border: "1px solid rgba(211,180,131,0.25)",
+                background: "rgba(211,180,131,0.06)",
+                fontSize: 10.5,
+                color: "var(--accent)",
+              }}
+            >
+              <ShieldCheck size={14} aria-hidden />
+              SHA256 · SQLite · dry-run
+            </div>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="size-4 text-accent" aria-hidden />
+            <div className="panel-head">
+              <h3 className="panel-title">
+                <Database size={14} strokeWidth={2} aria-hidden />
                 Transaction log
-              </CardTitle>
+              </h3>
               <Badge tone="muted">%LOCALAPPDATA%</Badge>
-            </CardHeader>
-            <CardContent>
-              <p className="font-mono text-[10px] leading-relaxed text-mut">
-                WexoOptimizer/transactions.db
-              </p>
-              <p className="mt-2 text-[11px] leading-relaxed text-mut">
-                Cada acción se registra con timestamp, parámetros, resultado y disponibilidad de
-                rollback.
-              </p>
-            </CardContent>
+            </div>
+            <p style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--dim)" }}>
+              WexoOptimizer/transactions.db
+            </p>
+            <p style={{ marginTop: 8, fontSize: 10.5, lineHeight: 1.6, color: "var(--dim)" }}>
+              Cada acción se registra con timestamp, parámetros, resultado y disponibilidad de
+              rollback.
+            </p>
           </Card>
         </div>
       </div>

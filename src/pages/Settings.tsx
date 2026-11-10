@@ -1,11 +1,24 @@
-import { Contrast, Gauge, Info, Languages, Monitor as MonitorIcon, Moon, ShieldCheck, Sun } from "lucide-react";
+import {
+  Contrast,
+  FolderOpen,
+  Gauge as GaugeIcon,
+  Info,
+  Monitor as MonitorIcon,
+  Moon,
+  RotateCcw,
+  ShieldAlert,
+  ShieldCheck,
+  Sun,
+} from "lucide-react";
 import type { ReactNode } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/Badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Switch } from "@/components/ui/Switch";
-import { isDesktop } from "@/lib/ipc";
+import { isDesktop, ipc } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
 import type { Theme } from "@/types";
@@ -20,33 +33,36 @@ const THEMES: { value: Theme; icon: typeof Sun; labelKey: string }[] = [
 function Section({
   title,
   icon: Icon,
+  badge,
   children,
 }: {
   title: string;
   icon: typeof Sun;
+  badge?: string;
   children: ReactNode;
 }) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Icon className="size-4 text-accent" aria-hidden />
+      <div className="panel-head">
+        <h3 className="panel-title">
+          <Icon size={14} strokeWidth={2} aria-hidden />
           {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="divide-y divide-line pt-0">{children}</CardContent>
+        </h3>
+        {badge ? <Badge tone="muted">{badge}</Badge> : null}
+      </div>
+      {children}
     </Card>
   );
 }
 
 function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 py-4">
-      <div className="min-w-[180px] flex-1">
-        <p className="text-xs font-medium text-text">{label}</p>
-        {hint ? <p className="mt-0.5 text-[11px] leading-relaxed text-mut">{hint}</p> : null}
+    <div className="row">
+      <div className="row-label">
+        <b>{label}</b>
+        {hint ? <span>{hint}</span> : null}
       </div>
-      <div className="shrink-0">{children}</div>
+      <div style={{ flexShrink: 0 }}>{children}</div>
     </div>
   );
 }
@@ -56,24 +72,42 @@ export function Settings() {
   const settings = useAppStore((state) => state.settings);
   const appInfo = useAppStore((state) => state.appInfo);
   const updateSettings = useAppStore((state) => state.updateSettings);
+  const resetSettings = useAppStore((state) => state.resetSettings);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const openLogs = () => {
+    setFeedback(null);
+    void ipc
+      .openLogsDir()
+      .catch((cause) => setFeedback(cause instanceof Error ? cause.message : String(cause)));
+  };
+
+  const reset = () => {
+    setFeedback(null);
+    void resetSettings()
+      .then(() => setFeedback(t("settings.resetDone")))
+      .catch((cause) => setFeedback(cause instanceof Error ? cause.message : String(cause)));
+  };
+
+  const restartElevated = () => {
+    setFeedback(null);
+    void ipc
+      .relaunchAsAdmin()
+      .catch((cause) => setFeedback(cause instanceof Error ? cause.message : String(cause)));
+  };
 
   return (
     <section className="view" id="configuracion">
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid cols-2">
         <Section title={t("settings.appearance")} icon={Sun}>
           <Row label={t("settings.language")} hint={t("settings.saved")}>
-            <div className="inline-flex rounded-lg border border-line bg-card p-0.5">
+            <div className="seg">
               {(["es", "en"] as const).map((language) => (
                 <button
                   key={language}
                   type="button"
                   onClick={() => void updateSettings({ language })}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 text-xs transition-colors",
-                    settings.language === language
-                      ? "bg-accent text-white font-medium"
-                      : "text-mut hover:text-text",
-                  )}
+                  className={cn(settings.language === language && "active")}
                 >
                   {language === "es" ? "Español" : "English"}
                 </button>
@@ -82,23 +116,21 @@ export function Settings() {
           </Row>
 
           <Row label={t("settings.theme")} hint={t("settings.saved")}>
-            <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-              {THEMES.map((theme) => (
-                <button
-                  key={theme.value}
-                  type="button"
-                  onClick={() => void updateSettings({ theme: theme.value })}
-                  className={cn(
-                    "flex w-[74px] flex-col items-center gap-1.5 rounded-lg border px-2 py-2 text-[10px] transition-colors",
-                    settings.theme === theme.value
-                      ? "border-accent/60 bg-accent-soft text-accent"
-                      : "border-line bg-card text-mut hover:text-text",
-                  )}
-                >
-                  <theme.icon className="size-4" aria-hidden />
-                  {t(theme.labelKey)}
-                </button>
-              ))}
+            <div className="theme-grid">
+              {THEMES.map((theme) => {
+                const Icon = theme.icon;
+                return (
+                  <button
+                    key={theme.value}
+                    type="button"
+                    onClick={() => void updateSettings({ theme: theme.value })}
+                    className={cn("theme-btn", settings.theme === theme.value && "active")}
+                  >
+                    <Icon size={15} aria-hidden />
+                    {t(theme.labelKey)}
+                  </button>
+                );
+              })}
             </div>
           </Row>
 
@@ -110,12 +142,12 @@ export function Settings() {
           </Row>
         </Section>
 
-        <Section title={t("settings.monitor")} icon={Gauge}>
+        <Section title={t("settings.monitor")} icon={GaugeIcon}>
           <Row
             label={t("settings.monitorInterval")}
             hint={t("settings.monitorIntervalHint", { ms: settings.monitorIntervalMs })}
           >
-            <div className="flex w-56 items-center gap-3">
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <input
                 type="range"
                 min={500}
@@ -125,67 +157,81 @@ export function Settings() {
                 onChange={(event) =>
                   void updateSettings({ monitorIntervalMs: Number(event.target.value) })
                 }
-                className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-line"
-                style={{ accentColor: "var(--accent)" }}
+                className="range"
                 aria-label={t("settings.monitorInterval")}
               />
-              <span className="w-14 text-right font-mono text-[11px] text-mut">
+              <span
+                style={{
+                  width: 56,
+                  textAlign: "right",
+                  fontFamily: "var(--mono)",
+                  fontSize: 10.5,
+                  color: "var(--accent)",
+                }}
+              >
                 {settings.monitorIntervalMs} ms
               </span>
             </div>
           </Row>
-
-          <Row label={t("settings.telemetry")} hint={t("settings.telemetryHint")}>
-            <Switch
-              checked={settings.telemetryEnabled}
-              onCheckedChange={(checked) => void updateSettings({ telemetryEnabled: checked })}
-            />
-          </Row>
-
-          <Row label={t("monitor.targets")}>
-            <Badge tone="accent">M3</Badge>
-          </Row>
         </Section>
 
-        <Section title={t("settings.updates")} icon={Languages}>
-          <Row label={t("settings.channel")}>
-            <div className="inline-flex rounded-lg border border-line bg-card p-0.5">
-              {(["stable", "beta"] as const).map((channel) => (
-                <button
-                  key={channel}
-                  type="button"
-                  onClick={() => void updateSettings({ updateChannel: channel })}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 text-xs capitalize transition-colors",
-                    settings.updateChannel === channel
-                      ? "bg-accent text-white font-medium"
-                      : "text-mut hover:text-text",
-                  )}
-                >
-                  {channel === "stable" ? t("settings.stable") : t("settings.beta")}
-                </button>
-              ))}
-            </div>
+        <Section title={t("settings.actions")} icon={FolderOpen}>
+          <Row label={t("settings.openLogs")} hint={appInfo?.logDir ?? undefined}>
+            <Button variant="ghost" size="sm" disabled={!isDesktop} onClick={openLogs}>
+              <FolderOpen size={13} aria-hidden />
+              {t("settings.open")}
+            </Button>
           </Row>
-          <Row label="Auto-update">
-            <Badge tone="muted">M5</Badge>
+
+          <Row label={t("settings.reset")} hint={t("settings.resetHint")}>
+            <Button variant="ghost" size="sm" onClick={reset}>
+              <RotateCcw size={13} aria-hidden />
+              {t("settings.resetAction")}
+            </Button>
           </Row>
+
+          <Row
+            label={t("settings.restartAdmin")}
+            hint={
+              appInfo?.isAdmin ? t("settings.adminAlready") : t("settings.restartAdminHint")
+            }
+          >
+            {appInfo?.isAdmin ? (
+              <Badge tone="accent">
+                <ShieldCheck size={12} aria-hidden /> {t("settings.admin")}
+              </Badge>
+            ) : (
+              <Button variant="ghost" size="sm" disabled={!isDesktop} onClick={restartElevated}>
+                <ShieldAlert size={13} aria-hidden />
+                {t("settings.restartAdmin")}
+              </Button>
+            )}
+          </Row>
+
+          {feedback ? (
+            <p style={{ marginTop: 10, fontSize: 10.5, color: "var(--mut)" }}>{feedback}</p>
+          ) : null}
         </Section>
 
         <Section title={t("settings.about")} icon={Info}>
           <Row label={t("settings.version")}>
-            <span className="font-mono text-xs text-mut">{appInfo?.version ?? "0.1.0"}</span>
+            <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--mut)" }}>
+              {appInfo?.version ?? "0.1.0"}
+            </span>
           </Row>
           <Row label={t("settings.os")}>
-            <span className="text-xs text-mut">{appInfo?.os ?? "Windows"}</span>
+            <span style={{ fontSize: 11, color: "var(--mut)" }}>{appInfo?.os ?? "—"}</span>
           </Row>
           <Row label={t("settings.arch")}>
-            <span className="font-mono text-xs text-mut">{appInfo?.arch ?? "x86_64"}</span>
+            <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--mut)" }}>
+              {appInfo?.arch ?? "x86_64"}
+            </span>
           </Row>
           <Row label={t("settings.privileges")}>
-            <span className="flex items-center gap-1.5 text-xs text-mut">
+            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--mut)" }}>
               <ShieldCheck
-                className={cn("size-3.5", appInfo?.isAdmin ? "text-ok" : "text-warn")}
+                size={13}
+                style={{ color: appInfo?.isAdmin ? "var(--ok)" : "var(--warn)" }}
                 aria-hidden
               />
               {appInfo?.isAdmin ? t("settings.admin") : t("settings.standard")}

@@ -50,6 +50,7 @@ const defaultSettings: AppSettings = {
   minimizeToTray: false,
   updateChannel: "stable",
   telemetryEnabled: false,
+  dataDir: null,
 };
 
 const browserAppInfo: AppInfo = {
@@ -132,12 +133,20 @@ export const ipc = {
     return Promise.resolve(settings);
   },
 
+  openLogsDir(): Promise<void> {
+    return isDesktop ? invoke("open_logs_dir") : backendUnavailable();
+  },
+
+  relaunchAsAdmin(): Promise<void> {
+    return isDesktop ? invoke("relaunch_as_admin") : backendUnavailable();
+  },
+
   getOptimizations(): Promise<Optimization[]> {
     return isDesktop ? invoke("get_optimizations") : backendUnavailable();
   },
 
   applyOptimizations(optimization_ids: string[], dry_run: boolean): Promise<ApplyResult> {
-    return isDesktop ? invoke("apply_optimizations", { optimization_ids, dry_run }) : backendUnavailable();
+    return isDesktop ? invoke("apply_optimizations", { optimizationIds: optimization_ids, dryRun: dry_run }) : backendUnavailable();
   },
 
   getTransactionHistory(limit: number): Promise<TransactionRecord[]> {
@@ -145,7 +154,7 @@ export const ipc = {
   },
 
   rollbackTransaction(transaction_id: string): Promise<void> {
-    return isDesktop ? invoke("rollback_transaction", { transaction_id }) : backendUnavailable();
+    return isDesktop ? invoke("rollback_transaction", { transactionId: transaction_id }) : backendUnavailable();
   },
 };
 

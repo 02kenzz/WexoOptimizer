@@ -1,3 +1,12 @@
+import {
+  Activity,
+  History,
+  LayoutDashboard,
+  ScanSearch,
+  SlidersHorizontal,
+  Sparkles,
+  Wrench,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 
@@ -7,18 +16,18 @@ import { useAppStore } from "@/stores/appStore";
 interface NavItem {
   view: string;
   labelKey: string;
-  icon: string;
+  icon: typeof LayoutDashboard;
   path: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { view: "inicio", labelKey: "nav.dashboard", icon: "home", path: "/dashboard" },
-  { view: "diagnostico", labelKey: "nav.diagnostics", icon: "search", path: "/diagnostics" },
-  { view: "optimizacion", labelKey: "nav.optimizations", icon: "bolt", path: "/optimizations" },
-  { view: "monitor", labelKey: "nav.monitor", icon: "mon", path: "/monitor" },
-  { view: "herramientas", labelKey: "nav.tools", icon: "tools", path: "/tools" },
-  { view: "historial", labelKey: "nav.history", icon: "folder", path: "/history" },
-  { view: "configuracion", labelKey: "nav.settings", icon: "gear", path: "/settings" },
+  { view: "inicio", labelKey: "nav.dashboard", icon: LayoutDashboard, path: "/dashboard" },
+  { view: "diagnostico", labelKey: "nav.diagnostics", icon: ScanSearch, path: "/diagnostics" },
+  { view: "optimizacion", labelKey: "nav.optimizations", icon: Sparkles, path: "/optimizations" },
+  { view: "monitor", labelKey: "nav.monitor", icon: Activity, path: "/monitor" },
+  { view: "herramientas", labelKey: "nav.tools", icon: Wrench, path: "/tools" },
+  { view: "historial", labelKey: "nav.history", icon: History, path: "/history" },
+  { view: "configuracion", labelKey: "nav.settings", icon: SlidersHorizontal, path: "/settings" },
 ];
 
 interface SidebarProps {
@@ -31,32 +40,53 @@ export function Sidebar({ currentView }: SidebarProps) {
   const appInfo = useAppStore((state) => state.appInfo);
 
   return (
-    <aside>
+    <aside className="sidebar">
       <div className="brand">
-        <div className="logo" />
-        <div>
-          <b>Optimizer</b>
-          <span>Rendimiento sin límites</span>
+        <div className="brand-mark" aria-hidden="true">
+          <img src="/logo.svg" alt="" draggable={false} />
+        </div>
+        <div className="brand-text">
+          <b>{t("app.name")}</b>
+          <span>{t("app.tagline")}</span>
         </div>
       </div>
-      <nav>
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.view}
-            data-view={item.view}
-            className={cn(
-              "flex gap-14 items-center px-[14px] py-[13px] rounded-[14px] text-left border border-transparent transition-[background,color] duration-200",
-              currentView === item.view
-                ? "text-text bg-[rgba(255,255,255,.08)] border-line"
-                : "text-mut hover:text-text hover:bg-[rgba(255,255,255,.04)]"
-            )}
-            onClick={() => navigate(item.path)}
-          >
-            <svg className="ic"><use href={`#${item.icon}`} /></svg>
-            {t(item.labelKey)}
-          </button>
-        ))}
+
+      <nav className="nav" aria-label={t("app.name")}>
+        {NAV_ITEMS.map((item) => {
+          const Icon = item.icon;
+          const active = currentView === item.view;
+
+          return (
+            <button
+              key={item.view}
+              type="button"
+              data-view={item.view}
+              aria-current={active ? "page" : undefined}
+              className={cn("nav-item", active && "active")}
+              onClick={() => navigate(item.path)}
+            >
+              <span className="nav-icon">
+                <Icon size={17} strokeWidth={1.8} aria-hidden />
+              </span>
+              <span className="nav-label">{t(item.labelKey)}</span>
+            </button>
+          );
+        })}
       </nav>
+
+      <div className="side-spacer" />
+
+      <div className="side-card">
+        <div className="side-card-head">
+          <span className="pulse-dot" />
+          <span>{appInfo?.isAdmin ? t("app.admin") : t("app.standard")}</span>
+        </div>
+        <small>{t("app.version", { version: appInfo?.version ?? "0.1.0" })}</small>
+        <div className="side-meta">
+          <span>Win</span>
+          <span>{appInfo?.arch ?? "x86_64"}</span>
+        </div>
+      </div>
     </aside>
   );
 }

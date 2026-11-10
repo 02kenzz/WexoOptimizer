@@ -1,5 +1,6 @@
 mod commands;
 mod config;
+mod elevation;
 mod error;
 mod events;
 mod logging;
@@ -7,14 +8,26 @@ mod state;
 
 use state::AppState;
 use tauri::{
-    Manager, Runtime,
+    LogicalSize, Manager, Runtime, Size, WebviewWindow,
     menu::{MenuBuilder, MenuItemBuilder},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     WindowEvent,
 };
 
+/// Preferred and minimum main-window size, in logical pixels.
+const IDEAL_WIDTH: f64 = 1320.0;
+const IDEAL_HEIGHT: f64 = 860.0;
+const MIN_WIDTH: f64 = 900.0;
+const MIN_HEIGHT: f64 = 620.0;
+
 /// Boots the Tauri application.
 pub fn run() {
+    // The app always opens with administrator rights: an unelevated launch
+    // starts an elevated copy and lets it do the work.
+    if elevation::should_hand_off() {
+        return;
+    }
+
     let paths = config::AppPaths::discover();
     if let Err(error) = paths.ensure_dirs() {
         eprintln!("could not create application directories: {error}");
@@ -42,6 +55,8 @@ pub fn run() {
 
             // Handle window close event (minimize to tray if enabled)
             if let Some(window) = app.get_webview_window("main") {
+                fit_main_window(&window);
+                let _ = window.show();
                 let handle = app.handle().clone();
                 window.on_window_event(move |event| {
                     if let WindowEvent::CloseRequested { api, .. } = event {
@@ -73,6 +88,8 @@ pub fn run() {
             commands::apply_optimizations,
             commands::get_transaction_history,
             commands::rollback_transaction,
+            commands::open_logs_dir,
+            commands::relaunch_as_admin,
         ])
         .build(tauri::generate_context!())
         .expect("failed to build Wexo Optimizer");
@@ -82,6 +99,25 @@ pub fn run() {
             handle.state::<AppState>().stop_monitor();
         }
     });
+}
+
+/// Fits the main window to the monitor it opens on, leaving room for the
+/// taskbar and the window frame, then centers it. It never maximizes.
+fn fit_main_window<R: Runtime>(window: &WebviewWindow<R>) {
+    let monitor = match window.current_monitor() {
+        Ok(Some(monitor)) => monitor,
+        _ => return,
+    };
+
+    let screen = monitor.size().to_logical::<f64>(monitor.scale_factor());
+    let available_width = (screen.width - 96.0).max(MIN_WIDTH);
+    let available_height = (screen.height - 128.0).max(MIN_HEIGHT);
+    let width = IDEAL_WIDTH.min(available_width);
+    let height = IDEAL_HEIGHT.min(available_height);
+
+    tracing::info!(width, height, scale = monitor.scale_factor(), "main window fitted to display");
+    let _ = window.set_size(Size::Logical(LogicalSize::new(width, height)));
+    let _ = window.center();
 }
 
 /// Creates the system tray with Show/Quit menu.

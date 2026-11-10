@@ -56,20 +56,40 @@ impl OptimizationRegistry {
     pub fn new() -> Self {
         let mut registry = Self::default();
         registry.register_builtins();
+        registry.refresh_availability();
         registry
     }
 
-    fn register_builtins(&mut self) {
-        use crate::definitions::builtins::*;
+    /// Recomputes which optimizations can run on this machine.
+    fn refresh_availability(&mut self) {
+        for def in self.defs.values_mut() {
+            def.meta.available =
+                crate::definitions::check_availability(&def.meta.id, &def.meta.applies_to);
+        }
+    }
 
-        self.register(disable_sysmain());
-        self.register(disable_diagtrack());
-        self.register(power_plan_ultimate());
-        self.register(tcp_autotuning());
-        self.register(enable_hags());
-        self.register(reduce_visual_effects());
-        self.register(disable_startup_bloat());
-        self.register(ntfs_last_access());
+    fn register_builtins(&mut self) {
+        #[cfg(windows)]
+        {
+            use crate::definitions::builtins::*;
+
+            self.register(disable_sysmain());
+            self.register(disable_diagtrack());
+            self.register(power_plan_ultimate());
+            self.register(tcp_autotuning());
+            self.register(enable_hags());
+            self.register(reduce_visual_effects());
+            self.register(ntfs_last_access());
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            use crate::definitions::builtins_linux::*;
+
+            self.register(reduce_visual_effects());
+            self.register(disable_bluetooth());
+            self.register(vm_swappiness());
+        }
     }
 
     pub fn register(&mut self, def: OptimizationDef) {
@@ -117,16 +137,13 @@ impl OptimizationEngine {
         optimization_ids: &[String],
         dry_run: bool,
     ) -> Result<ApplyResult, EngineError> {
-        // Preflight checks
+        // A dry run writes nothing, so it is never blocked; the real apply still
+        // refuses to run without room to write a snapshot.
         let preflight = self.preflight()?;
-        if !preflight.can_apply() {
-            let blockers: Vec<String> = preflight
-                .blockers()
-                .iter()
-                .map(|b| format!("{:?}", b))
-                .collect();
-            return Err(EngineError::Preflight(blockers.join(", ")));
+        if !dry_run && preflight.free_disk_bytes < wexo_safety::MIN_FREE_DISK_BYTES {
+            return Err(EngineError::Preflight("LowDiskSpace".to_string()));
         }
+        let pending_reboot = preflight.pending_reboot;
 
         // Validate all optimizations exist and are available
         let defs: Vec<&OptimizationDef> = optimization_ids
@@ -144,6 +161,23 @@ impl OptimizationEngine {
                     })
             })
             .collect::<Result<Vec<_>, _>>()?;
+
+        // A pending restart only holds back the tweaks that need that restart.
+        if !dry_run && pending_reboot {
+            if let Some(def) = defs.iter().find(|def| def.meta.requires_reboot) {
+                return Err(EngineError::Preflight(format!("PendingReboot: {}", def.meta.id)));
+            }
+        }
+
+        // Elevation is only required by the tweaks that write machine-wide state.
+        if !preflight.is_admin {
+            if let Some(def) = defs.iter().find(|def| def.meta.requires_admin) {
+                return Err(EngineError::Preflight(format!(
+                    "This optimization requires administrator privileges: {}",
+                    def.meta.id
+                )));
+            }
+        }
 
         // Check for conflicts
         for def in &defs {
@@ -170,25 +204,49 @@ impl OptimizationEngine {
                 registry_values: HashMap::new(),
                 service_states: HashMap::new(),
                 file_backups: HashMap::new(),
+                absent_files: Vec::new(),
             }
         };
 
-        // Record transaction as in-progress
-        let log = self.transaction_log.lock();
-        let transaction = log.record(
-            optimization_ids,
-            TransactionStatus::Applied,
-            true,
-            None,
-            Some(snapshot.id.clone()),
-        )?;
-        drop(log);
+        // Dry runs must not pollute the transaction log.
+        let transaction = if dry_run {
+            TransactionRecord {
+                id: "dry-run".to_string(),
+                timestamp_ms: 0,
+                optimization_ids: optimization_ids.to_vec(),
+                status: TransactionStatus::Applied,
+                rollback_available: false,
+                message: Some("dry-run".to_string()),
+                snapshot_id: None,
+            }
+        } else {
+            self.transaction_log.lock().record(
+                optimization_ids,
+                TransactionStatus::Applied,
+                true,
+                None,
+                Some(snapshot.id.clone()),
+            )?
+        };
 
-        // Apply each optimization
+        // Apply each optimization, undoing everything if one of them fails.
         let mut results = Vec::new();
         for def in defs {
-            let result = self.apply_single(def, dry_run)?;
-            results.push(result);
+            match self.apply_single(def, dry_run) {
+                Ok(result) => results.push(result),
+                Err(error) => {
+                    if !dry_run {
+                        if let Err(rollback_error) = self.rollback_all(&snapshot, &results) {
+                            error!(%rollback_error, "rollback after failure failed");
+                        }
+                        let _ = self
+                            .transaction_log
+                            .lock()
+                            .update_status(&transaction.id, TransactionStatus::Failed);
+                    }
+                    return Err(error);
+                }
+            }
         }
 
         // Verify all
@@ -218,27 +276,6 @@ impl OptimizationEngine {
         info!(id = %def.meta.id, "applying optimization");
 
         let mut message = None;
-        let mut benchmark_delta = None;
-
-        // Run pre-benchmark if defined
-        if !dry_run {
-            if let Some(bench_fn) = &def.benchmark_before {
-                if let Ok(before) = bench_fn() {
-                    // Store for after comparison
-                    if let Some(bench_fn) = &def.benchmark_after {
-                        if let Ok(after) = bench_fn() {
-                            benchmark_delta = Some(wexo_core::BenchmarkDelta {
-                                metric: def.meta.id.clone(),
-                                before,
-                                after,
-                                unit: "ms".to_string(), // Default unit
-                                delta_percent: ((after - before) / before * 100.0),
-                            });
-                        }
-                    }
-                }
-            }
-        }
 
         // Apply the optimization
         if !dry_run {
@@ -263,7 +300,7 @@ impl OptimizationEngine {
             applied: !dry_run,
             verification,
             message,
-            benchmark_delta,
+            benchmark_delta: None,
         })
     }
 
@@ -294,6 +331,18 @@ impl OptimizationEngine {
 
         if !transaction.rollback_available {
             return Err(EngineError::Rollback("Transaction cannot be rolled back".to_string()));
+        }
+
+        // Undo each tweak first: the snapshot afterwards restores every value that
+        // already existed, so nothing the tweak created is left behind.
+        for id in &transaction.optimization_ids {
+            if let Some(def) = self.registry.get(id) {
+                if let Some(rollback_fn) = &def.rollback_fn {
+                    if let Err(error) = rollback_fn() {
+                        warn!(%error, optimization = %id, "rollback step failed");
+                    }
+                }
+            }
         }
 
         if let Some(snapshot_id) = &transaction.snapshot_id {
@@ -347,6 +396,7 @@ fn combine_snapshots(specs: &[SnapshotSpec]) -> SnapshotSpec {
     combined
 }
 
+#[cfg(windows)]
 fn get_free_disk_space() -> u64 {
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
@@ -371,6 +421,23 @@ fn get_free_disk_space() -> u64 {
     u64::MAX
 }
 
+#[cfg(unix)]
+fn get_free_disk_space() -> u64 {
+    use std::ffi::CString;
+
+    let path = match CString::new("/") {
+        Ok(path) => path,
+        Err(_) => return u64::MAX,
+    };
+    let mut stats: libc::statvfs = unsafe { std::mem::zeroed() };
+    // SAFETY: `path` is NUL-terminated and `stats` points to writable memory.
+    if unsafe { libc::statvfs(path.as_ptr(), &mut stats) } == 0 {
+        return (stats.f_bavail as u64).saturating_mul(stats.f_frsize as u64);
+    }
+    u64::MAX
+}
+
+#[cfg(windows)]
 fn check_pending_reboot() -> bool {
     use winreg::enums::*;
     use winreg::RegKey;
@@ -387,4 +454,13 @@ fn check_pending_reboot() -> bool {
         }
     }
     false
+}
+
+#[cfg(unix)]
+fn check_pending_reboot() -> bool {
+    // Debian/Ubuntu write these markers; other distributions may not, in which
+    // case a reboot is simply not detected.
+    ["/var/run/reboot-required", "/run/reboot-required"]
+        .iter()
+        .any(|path| std::path::Path::new(path).exists())
 }

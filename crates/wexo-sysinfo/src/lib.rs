@@ -5,6 +5,10 @@
 
 pub mod pdh;
 pub mod sampler;
+#[cfg(windows)]
+pub mod wmi;
+#[cfg(not(windows))]
+#[path = "wmi_other.rs"]
 pub mod wmi;
 
 pub use pdh::PdhSampler;
@@ -28,6 +32,7 @@ const CPU_REFRESH_MIN: Duration = Duration::from_millis(900);
 struct SystemState {
     system: System,
     last_cpu_refresh: Option<Instant>,
+    last_cpu_usage: f32,
 }
 
 /// A source of `SystemProfile` snapshots.
@@ -58,6 +63,7 @@ impl LiveCollector {
             system: Mutex::new(SystemState {
                 system,
                 last_cpu_refresh: None,
+                last_cpu_usage: 0.0,
             }),
             wmi,
         }
@@ -90,8 +96,15 @@ impl SystemCollector for LiveCollector {
             .map_or(true, |last| now.duration_since(last) >= CPU_REFRESH_MIN);
         if cpu_due {
             state.system.refresh_cpu_usage();
-            state.system.refresh_cpu_frequency();
             state.last_cpu_refresh = Some(now);
+        }
+
+        if cpu_due {
+            // Read the usage before the frequency refresh (sysinfo 0.33 on
+            // Windows reports 100% again afterwards) and keep it, so calls
+            // inside CPU_REFRESH_MIN reuse the same reading.
+            state.last_cpu_usage = state.system.global_cpu_usage();
+            state.system.refresh_cpu_frequency();
         }
         state.system.refresh_memory();
 
@@ -115,7 +128,7 @@ impl SystemCollector for LiveCollector {
             logical_cores,
             current_frequency_mhz: first_cpu.map(|cpu| cpu.frequency()).unwrap_or(0),
             base_frequency_mhz: 0,
-            usage_percent: system.global_cpu_usage(),
+            usage_percent: state.last_cpu_usage,
         };
 
         let memory = MemoryInfo {
@@ -201,7 +214,7 @@ fn collect_networks() -> Vec<NetworkInfo> {
 
 fn collect_os() -> OsInfo {
     OsInfo {
-        name: System::name().unwrap_or_else(|| "Windows".to_string()),
+        name: System::name().unwrap_or_else(default_os_name),
         version: System::os_version().unwrap_or_default(),
         build: String::new(),
         kernel_version: System::kernel_version().unwrap_or_default(),
@@ -217,14 +230,23 @@ fn now_ms() -> u64 {
         .unwrap_or(0)
 }
 
-/// Windows product name, e.g. `"Windows 11 Home"`.
+/// Product name reported by the OS, e.g. `"Windows 11 Home"` or `"Ubuntu"`.
 pub fn os_name() -> String {
-    System::name().unwrap_or_else(|| "Windows".to_string())
+    System::name().unwrap_or_else(default_os_name)
 }
 
-/// Windows release version, e.g. `"11"` or `"10"`.
+/// Release version reported by the OS, e.g. `"11"` or `"24.04"`.
 pub fn os_version() -> String {
     System::os_version().unwrap_or_default()
+}
+
+/// Fallback when the platform cannot report a product name.
+fn default_os_name() -> String {
+    if cfg!(windows) {
+        "Windows".to_string()
+    } else {
+        std::env::consts::OS.to_string()
+    }
 }
 
 /// Whether the current process can perform privileged optimizations.
@@ -234,7 +256,12 @@ pub fn is_elevated() -> bool {
         // SAFETY: `IsUserAnAdmin` has no preconditions and only reads the token.
         unsafe { windows_sys::Win32::UI::Shell::IsUserAnAdmin() != 0 }
     }
-    #[cfg(not(windows))]
+    #[cfg(unix)]
+    {
+        // SAFETY: `geteuid` has no preconditions and only reads the process id.
+        unsafe { libc::geteuid() == 0 }
+    }
+    #[cfg(not(any(windows, unix)))]
     {
         false
     }

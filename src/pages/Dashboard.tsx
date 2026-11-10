@@ -1,27 +1,25 @@
+import {
+  Activity,
+  Cpu,
+  HardDrive,
+  MemoryStick,
+  Network,
+  ScanSearch,
+  Sparkles,
+  Trash2,
+  Zap,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
-import { Activity, Database, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ScoreRing } from "@/components/ui/ScoreRing";
 import { useDiagnostics } from "@/hooks/useDiagnostics";
 import { useLiveMetrics } from "@/hooks/useLiveMetrics";
-import { bottleneckKey } from "@/lib/bottlenecks";
-import { usageTone } from "@/lib/tone";
-import {
-  cn,
-  formatBytes,
-  formatDuration,
-  formatMhz,
-  formatPercent,
-  formatRate,
-  healthLabel,
-  scoreTone,
-} from "@/lib/utils";
-import { ipc } from "@/lib/ipc";
-import type { DiagnosticReport, DiskInfo } from "@/types";
+import { formatBytes, formatDuration, formatPercent, formatRate, healthLabel, scoreTone } from "@/lib/utils";
+import type { DiagnosticReport, DiskInfo, LiveMetrics } from "@/types";
 
 function systemDisk(profile: DiagnosticReport["profile"]): DiskInfo | undefined {
   return (
@@ -34,178 +32,111 @@ function usedPercent(disk: DiskInfo | undefined): number {
   return 100 - (disk.availableBytes / disk.totalBytes) * 100;
 }
 
-function Sparkline({ data, color = "#cfcfd6" }: { data: number[]; color?: string }) {
-  const points = data.map((v, i) => `${(i * 90) / 19},${22 - v * 0.2}`).join(" ");
+function Spark({ data }: { data: number[] }) {
+  const series = data.length > 1 ? data : [0, 0];
+  const max = Math.max(...series, 1);
+  const min = Math.min(...series, 0);
+  const span = max - min || 1;
+  const points = series
+    .map(
+      (value, index) =>
+        `${((index * 72) / (series.length - 1)).toFixed(1)},${(
+          24 - ((value - min) / span) * 19
+        ).toFixed(1)}`,
+    )
+    .join(" ");
+
   return (
-    <svg viewBox="0 0 90 24" preserveAspectRatio="none">
-      <polyline fill="none" stroke={color} strokeWidth={1.6} points={points} />
+    <svg className="spark" viewBox="0 0 72 26" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points={points} />
     </svg>
   );
 }
 
 interface MetricRowProps {
+  icon: LucideIcon;
   label: string;
-  key: string;
-  unit: string;
-  sparkColor?: string;
+  value: string;
+  data: number[];
 }
 
-function MetricRow({ label, key, unit, sparkColor }: MetricRowProps) {
-  const { latest } = useLiveMetrics(120);
-  const history = latest ? Array(20).fill(latest[key as keyof typeof latest] as number) : Array(20).fill(0);
-
+function MetricRow({ icon: Icon, label, value, data }: MetricRowProps) {
   return (
-    <div className="m">
-      <b>{label}</b>
-      <em data-k={key} data-u={unit}>—</em>
-      <Sparkline data={history} color={sparkColor} />
+    <div className="metric">
+      <span className="metric-icon">
+        <Icon size={15} strokeWidth={1.8} />
+      </span>
+      <span className="metric-name">{label}</span>
+      <span className="metric-value">{value}</span>
+      <Spark data={data} />
     </div>
   );
 }
 
-function TemperatureRow({ label, key, unit }: { label: string; key: string; unit: string }) {
-  const { latest } = useLiveMetrics(120);
-
-  return (
-    <div className="m t">
-      <span>{label}</span>
-      <em data-k={key} data-u={unit}>—</em>
-    </div>
-  );
+function seriesFrom(samples: LiveMetrics[], pick: (sample: LiveMetrics) => number): number[] {
+  const slice = samples.slice(-24);
+  return slice.length > 1 ? slice.map(pick) : [0, 0];
 }
 
-function ActionCard({ icon: Icon, action, title, description }: {
-  icon: React.ComponentType<{ className?: string }>;
-  action: string;
+function QuickAction({
+  icon: Icon,
+  title,
+  description,
+  onClick,
+}: {
+  icon: LucideIcon;
   title: string;
   description: string;
+  onClick: () => void;
 }) {
-  const navigate = useNavigate();
-
-  const handleClick = () => {
-    if (action === "diagnose") navigate("/diagnostics");
-    else if (action === "smart-optimize") navigate("/optimizations");
-    else if (action === "clean") navigate("/tools");
-    else if (action === "gaming") navigate("/optimizations");
-  };
-
   return (
-    <button className="card act" data-action={action} onClick={handleClick}>
+    <button type="button" className="quick" onClick={onClick}>
+      <span className="quick-top">
+        <span className="quick-icon">
+          <Icon size={19} strokeWidth={1.8} />
+        </span>
+        <span className="quick-arrow">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+        </span>
+      </span>
       <span>
-        <Icon className="ic" aria-hidden />
-        <strong>{title}</strong>
+        <b>{title}</b>
         <small>{description}</small>
       </span>
-      <span className="go"><svg className="ic"><use href="#arrow" /></svg></span>
     </button>
   );
 }
 
-function ActivityLog() {
+function GamingBanner() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
-    <Card>
-      <h3>{t("dashboard.recentActivity")}</h3>
-      <ul className="log">
-        <li>
-          <i><svg className="ic"><use href="#check" /></svg></i>
-          <span>{t("dashboard.activityDiagnosticCompleted")}</span>
-          <time>Hace 2 min</time>
-        </li>
-        <li>
-          <i><svg className="ic"><use href="#check" /></svg></i>
-          <span>{t("dashboard.activityTempCleaned")}</span>
-          <time>Hace 5 min</time>
-        </li>
-        <li>
-          <i><svg className="ic"><use href="#check" /></svg></i>
-          <span>{t("dashboard.activityStartupOptimized")}</span>
-          <time>Hace 10 min</time>
-        </li>
-      </ul>
-    </Card>
-  );
-}
-
-function GamingModeCard() {
-  const { t } = useTranslation();
-
-  return (
-    <Card className="game">
-      <div>
-        <h3>{t("dashboard.gamingMode")}</h3>
-        <p>{t("dashboard.gamingModeDesc")}</p>
+    <div
+      className="banner"
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: 20,
+        padding: "18px 22px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 16, minWidth: 0 }}>
+        <span className="banner-badge" style={{ margin: 0, flex: "none" }}>
+          <Zap size={18} strokeWidth={2} aria-hidden />
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <h3>{t("dashboard.gamingMode")}</h3>
+          <p style={{ marginTop: 4 }}>{t("dashboard.gamingModeDesc")}</p>
+        </div>
       </div>
-      <Button className="btn w" data-action="gaming" onClick={() => navigate("/optimizations")}>
-        <svg className="ic"><use href="#bolt" /></svg>
+      <Button variant="ghost" size="sm" onClick={() => navigate("/optimizations")}>
         {t("dashboard.activateGaming")}
       </Button>
-    </Card>
-  );
-}
-
-function HardwareCard({ report }: { report: DiagnosticReport }) {
-  const { t } = useTranslation();
-  const { profile } = report;
-  const mainDisk = systemDisk(profile);
-  const memoryUsed = profile.memory.totalBytes
-    ? (profile.memory.usedBytes / profile.memory.totalBytes) * 100
-    : 0;
-  const diskUsed = usedPercent(mainDisk);
-
-  return (
-    <Card>
-      <h3>{t("dashboard.hardwareStatus")}</h3>
-      <div className="m">
-        <b>{t("dashboard.cpu")}</b>
-        <em data-k="cpu" data-u="%">—</em>
-        <svg viewBox="0 0 90 24" preserveAspectRatio="none"><polyline data-spark="cpu" /></svg>
-      </div>
-      <div className="m">
-        <b>{t("dashboard.memory")}</b>
-        <em data-k="mem" data-u="%">—</em>
-        <svg viewBox="0 0 90 24" preserveAspectRatio="none"><polyline data-spark="mem" /></svg>
-      </div>
-      <div className="m">
-        <b>{t("dashboard.gpu")}</b>
-        <em data-k="gpu" data-u="%">—</em>
-        <svg viewBox="0 0 90 24" preserveAspectRatio="none"><polyline data-spark="gpu" /></svg>
-      </div>
-      <div className="m">
-        <b>{t("dashboard.disk")}</b>
-        <em data-k="dsk" data-u="%">—</em>
-        <svg viewBox="0 0 90 24" preserveAspectRatio="none"><polyline data-spark="dsk" /></svg>
-      </div>
-      <div className="m t">
-        <span>{t("dashboard.cpuTemp")}</span>
-        <em data-k="tc" data-u=" °C">—</em>
-      </div>
-      <div className="m t">
-        <span>{t("dashboard.gpuTemp")}</span>
-        <em data-k="tg" data-u=" °C">—</em>
-      </div>
-    </Card>
-  );
-}
-
-function Skeleton() {
-  return (
-    <div className="space-y-6 animate-pulse">
-      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr_1.1fr]">
-        <div className="min-h-[300px] rounded-[22px] border border-line bg-card" />
-        <div className="min-h-[300px] rounded-[22px] border border-line bg-card" />
-        <div className="min-h-[300px] rounded-[22px] border border-line bg-card" />
-      </div>
-      <div className="grid gap-18 lg:grid-cols-3">
-        <div className="min-h-[180px] rounded-[22px] border border-line bg-card" />
-        <div className="min-h-[180px] rounded-[22px] border border-line bg-card" />
-        <div className="min-h-[180px] rounded-[22px] border border-line bg-card" />
-      </div>
-      <div className="grid gap-18 lg:grid-cols-[1.6fr_1fr]">
-        <div className="min-h-[200px] rounded-[22px] border border-line bg-card" />
-        <div className="min-h-[200px] rounded-[22px] border border-line bg-card" />
-      </div>
     </div>
   );
 }
@@ -213,10 +144,26 @@ function Skeleton() {
 export function Dashboard() {
   const { t } = useTranslation();
   const { data: report, isLoading, isError, refetch } = useDiagnostics(5000);
-  const { latest } = useLiveMetrics(120);
+  const { samples, latest } = useLiveMetrics(120);
   const navigate = useNavigate();
 
-  if (isLoading) return <Skeleton />;
+  if (isLoading) {
+    return (
+      <div className="view">
+        <div className="grid cols-3">
+          <div className="panel" style={{ height: 260, opacity: 0.5 }} />
+          <div className="panel" style={{ height: 260, opacity: 0.35 }} />
+          <div className="panel" style={{ height: 260, opacity: 0.25 }} />
+        </div>
+        <div className="grid cols-4">
+          <div className="panel" style={{ height: 120, opacity: 0.3 }} />
+          <div className="panel" style={{ height: 120, opacity: 0.25 }} />
+          <div className="panel" style={{ height: 120, opacity: 0.2 }} />
+          <div className="panel" style={{ height: 120, opacity: 0.15 }} />
+        </div>
+      </div>
+    );
+  }
 
   if (isError || !report) {
     return (
@@ -235,6 +182,7 @@ export function Dashboard() {
 
   const { profile, health, bottlenecks } = report;
   const label = healthLabel(health.global);
+  const diskUsed = usedPercent(systemDisk(profile));
 
   const cpuPercent = latest?.cpuPercent ?? profile.cpu.usagePercent;
   const memoryPercent = latest
@@ -242,65 +190,118 @@ export function Dashboard() {
     : profile.memory.totalBytes
       ? (profile.memory.usedBytes / profile.memory.totalBytes) * 100
       : 0;
-  const diskUsed = usedPercent(systemDisk(profile));
-
-  const subsystems = [
-    { label: t("dashboard.cpu"), score: health.cpu, tone: "accent" as const },
-    { label: t("dashboard.memory"), score: health.memory, tone: "accent-2" as const },
-    { label: t("dashboard.storage"), score: health.disk, tone: "accent-3" as const },
-    { label: t("dashboard.network"), score: health.network, tone: "ok" as const },
-  ];
 
   return (
-    <section className="view on" id="inicio">
-      <div className="top">
-        <label className="search">
-          <svg className="ic"><use href="#search" /></svg>
-          <input placeholder={t("dashboard.searchPlaceholder")} />
-        </label>
-        <div className="avatar" />
-      </div>
+    <section className="view" id="inicio">
+      <div className="panel hero">
+        <div className="hero-copy">
+          <span className="eyebrow">
+            <span className="pulse-dot" />
+            {t("dashboard.live")}
+          </span>
+          <h2>
+            {health.global >= 75 ? t("dashboard.maxPerformance") : t("dashboard.systemReady")}
+          </h2>
+          <p>
+            {bottlenecks.length > 0
+              ? t("dashboard.healthSummary", { count: bottlenecks.length })
+              : t("dashboard.allGood")}
+            {" · "}
+            {t("dashboard.systemReadyDesc")}
+          </p>
 
-      <div className="hero">
-        <div>
-          <small>{t("dashboard.systemReady")}</small>
-          <h1>{t("dashboard.maxPerformance")}</h1>
-          <p>{t("dashboard.systemReadyDesc")}</p>
-          <div className="acts">
-            <Button className="btn w" data-action="optimize" onClick={() => navigate("/optimizations")}>
-              <svg className="ic"><use href="#bolt" /></svg>
+          <div className="hero-actions">
+            <Button variant="primary" size="lg" onClick={() => navigate("/optimizations")}>
+              <Zap size={16} aria-hidden />
               {t("dashboard.optimizeNow")}
             </Button>
-            <Button className="btn g" data-action="analyze" onClick={() => navigate("/diagnostics")}>
+            <Button variant="ghost" size="lg" onClick={() => navigate("/diagnostics")}>
               {t("dashboard.viewAnalysis")}
             </Button>
           </div>
-        </div>
 
-        <div className="ring">
-          <svg viewBox="0 0 100 100">
-            <circle className="t" cx="50" cy="50" r="44" pathLength="100" />
-            <circle className="p" cx="50" cy="50" r="44" pathLength="100" strokeDasharray={`${health.global * 0.98} 100`} />
-          </svg>
-          <div>
-            <strong>{health.global}%</strong>
-            <span>{t("dashboard.systemHealth")}</span>
+          <div className="hero-foot">
+            <span>
+              <Cpu size={13} aria-hidden />
+              {profile.cpu.brand || "CPU"}
+            </span>
+            <span>
+              <MemoryStick size={13} aria-hidden />
+              {formatBytes(profile.memory.totalBytes)}
+            </span>
+            <span>
+              <HardDrive size={13} aria-hidden />
+              {t("dashboard.uptime")} {formatDuration(profile.uptimeSeconds)}
+            </span>
           </div>
         </div>
 
-        <HardwareCard report={report} />
+        <div className="hero-score">
+          <ScoreRing value={health.global} label={t("dashboard.health")} size={208} />
+          <span className={`chip chip-${scoreTone(health.global)}`}>
+            <span className="dot" />
+            {t(`dashboard.${label}`)}
+          </span>
+        </div>
+
+        <div className="hero-metrics">
+          <div className="metric-list">
+            <MetricRow
+              icon={Cpu}
+              label={t("dashboard.cpu")}
+              value={formatPercent(cpuPercent, 0)}
+              data={seriesFrom(samples, (sample) => sample.cpuPercent)}
+            />
+            <MetricRow
+              icon={MemoryStick}
+              label={t("dashboard.memory")}
+              value={formatPercent(memoryPercent, 0)}
+              data={seriesFrom(samples, (sample) => sample.memoryPercent)}
+            />
+            <MetricRow
+              icon={HardDrive}
+              label={t("dashboard.storage")}
+              value={formatPercent(latest?.diskBusyPercent ?? diskUsed, 0)}
+              data={seriesFrom(samples, (sample) => sample.diskBusyPercent ?? 0)}
+            />
+            <MetricRow
+              icon={Network}
+              label={t("dashboard.network")}
+              value={formatRate(latest?.networkRxBytesPerSec ?? 0)}
+              data={seriesFrom(samples, (sample) => sample.networkRxBytesPerSec)}
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="row3">
-        <ActionCard icon={Activity} action="diagnose" title={t("dashboard.fullDiagnostic")} description={t("dashboard.fullDiagnosticDesc")} />
-        <ActionCard icon={Sparkles} action="smart-optimize" title={t("dashboard.smartOptimization")} description={t("dashboard.smartOptimizationDesc")} />
-        <ActionCard icon={Database} action="clean" title={t("dashboard.cleanFiles")} description={t("dashboard.cleanFilesDesc")} />
+      <div className="grid cols-4">
+        <QuickAction
+          icon={ScanSearch}
+          title={t("dashboard.fullDiagnostic")}
+          description={t("dashboard.fullDiagnosticDesc")}
+          onClick={() => navigate("/diagnostics")}
+        />
+        <QuickAction
+          icon={Sparkles}
+          title={t("dashboard.smartOptimization")}
+          description={t("dashboard.smartOptimizationDesc")}
+          onClick={() => navigate("/optimizations")}
+        />
+        <QuickAction
+          icon={Trash2}
+          title={t("dashboard.cleanFiles")}
+          description={t("dashboard.cleanFilesDesc")}
+          onClick={() => navigate("/tools")}
+        />
+        <QuickAction
+          icon={Activity}
+          title={t("dashboard.openMonitor")}
+          description={t("dashboard.openMonitorHint")}
+          onClick={() => navigate("/monitor")}
+        />
       </div>
 
-      <div className="bottom">
-        <ActivityLog />
-        <GamingModeCard />
-      </div>
+      <GamingBanner />
     </section>
   );
 }

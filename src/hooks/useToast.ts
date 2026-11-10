@@ -16,7 +16,7 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 // Use createElement to avoid esbuild JSX parsing issues with Context.Provider
-function ToastProviderInner({ value, children }: { value: ToastContextValue; children: ReactNode }) {
+function ToastProviderInner({ value, children }: { value: ToastContextValue; children?: ReactNode }) {
   return createElement(ToastContext.Provider, { value }, children);
 }
 
@@ -47,47 +47,63 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       children,
       createElement(
         "div",
-        { className: "fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none" },
+        { className: "toast-stack" },
         toasts.map((toast) =>
           createElement(
             "div",
             {
               key: toast.id,
-              className: `pointer-events-auto flex items-center gap-3 rounded-xl border px-4 py-3 min-w-[280px] max-w-[400px] animate-slide-up ${
-                toast.tone === "accent" ? "border-accent/50 bg-accent/10" :
-                toast.tone === "ok" ? "border-ok/50 bg-ok/10" :
-                toast.tone === "warn" ? "border-warn/50 bg-warn/10" :
-                "border-danger/50 bg-danger/10"
-              }`,
+              className: `toast toast-${toast.tone}`,
+              role: "status",
             },
+            createElement("span", {
+              className: "history-dot",
+              style: {
+                width: 8,
+                height: 8,
+                marginTop: 5,
+                borderRadius: "50%",
+                flex: "none",
+                background:
+                  toast.tone === "danger"
+                    ? "var(--danger)"
+                    : toast.tone === "warn"
+                      ? "var(--warn)"
+                      : "var(--accent)",
+                boxShadow: "0 0 12px currentColor",
+              },
+            }),
             createElement(
               "div",
-              { className: "flex-1" },
-              createElement("p", { className: "text-sm font-medium text-text" }, toast.title),
-              toast.description && createElement("p", { className: "text-xs text-mut" }, toast.description)
+              { style: { flex: 1, minWidth: 0 } },
+              createElement("b", null, toast.title),
+              toast.description ? createElement("p", null, toast.description) : null,
             ),
             createElement(
               "button",
               {
                 onClick: () => dismissToast(toast.id),
-                className: "text-mut hover:text-text",
+                className: "toast-x",
                 "aria-label": "Dismiss",
               },
               createElement(
                 "svg",
-                { className: "size-4", fill: "none", stroke: "currentColor", viewBox: "0 0 24 24" },
-                createElement("path", {
-                  strokeLinecap: "round",
-                  strokeLinejoin: "round",
+                {
+                  width: 14,
+                  height: 14,
+                  fill: "none",
+                  stroke: "currentColor",
+                  viewBox: "0 0 24 24",
                   strokeWidth: 2,
-                  d: "M6 18L18 6M6 6l12 12",
-                })
-              )
-            )
-          )
-        )
-      )
-    )
+                  strokeLinecap: "round",
+                },
+                createElement("path", { d: "M6 18L18 6M6 6l12 12" }),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
   );
 }
 

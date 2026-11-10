@@ -1,0 +1,101 @@
+Wexo Optimizer - End User License Agreement (EULA)
+=====================================================
+
+Version: 0.1.0
+Date: 2026
+
+Copyright (c) 2026 Wexo. All rights reserved.
+
+IMPORTANT - READ CAREFULLY: This End User License Agreement ("EULA") is a legal
+agreement between you (either an individual or a single entity) and Wexo
+("Licensor") for the software product identified above, which includes computer
+software and may include associated media, printed materials, and "online" or
+electronic documentation ("Software").
+
+BY INSTALLING, COPYING, OR OTHERWISE USING THE SOFTWARE, YOU AGREE TO BE BOUND
+BY THE TERMS OF THIS EULA. IF YOU DO NOT AGREE TO THE TERMS OF THIS EULA, DO
+NOT INSTALL OR USE THE SOFTWARE.
+
+1. GRANT OF LICENSE
+-------------------
+Licensor grants you a non-exclusive, non-transferable, revocable license to:
+  (a) install and use the Software on computers you own or control;
+  (b) use the Software for its intended purpose: Windows system optimization,
+      diagnostics, and performance monitoring.
+
+2. RESTRICTIONS
+---------------
+You shall not:
+  (a) modify, adapt, translate, reverse engineer, decompile, or disassemble
+      the Software, except to the extent applicable law expressly permits;
+  (b) rent, lease, lend, sell, sublicense, distribute, or transfer the
+      Software to any third party;
+  (c) remove or alter any proprietary notices, labels, or marks on the
+      Software;
+  (d) use the Software for any illegal or unauthorized purpose.
+
+3. SYSTEM-LEVEL OPERATIONS
+--------------------------
+The Software performs system-level operations including but not limited to:
+  - Modifying Windows registry settings
+  - Managing system services and scheduled tasks
+  - Cleaning temporary files and caches
+  - Adjusting power plans and CPU/GPU settings
+  - Modifying startup programs
+
+These operations require administrator privileges. By using the Software, you
+acknowledge that:
+  (a) system modifications carry inherent risk;
+  (b) you have created appropriate backups/restore points before applying
+      optimizations;
+  (c) Licensor is not liable for data loss, system instability, or hardware
+      damage resulting from use of the Software.
+
+4. TELEMETRY & PRIVACY
+----------------------
+The Software may collect anonymous usage statistics and crash reports to improve
+the product. No personally identifiable information is collected without your
+explicit consent. You can disable telemetry in Settings at any time.
+
+5. UPDATES
+----------
+The Software may automatically check for and install updates. You can configure
+update behavior in Settings.
+
+6. DISCLAIMER OF WARRANTIES
+---------------------------
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE IMPLIED WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.
+LICENSOR DOES NOT WARRANT THAT THE SOFTWARE WILL BE UNINTERRUPTED, ERROR-FREE,
+OR THAT DEFECTS WILL BE CORRECTED.
+
+7. LIMITATION OF LIABILITY
+--------------------------
+IN NO EVENT SHALL LICENSOR BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
+CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING WITHOUT LIMITATION, LOSS OF
+PROFITS, DATA, OR USE, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+INABILITY TO USE THE SOFTWARE, EVEN IF LICENSOR HAS BEEN ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGES.
+
+8. TERMINATION
+--------------
+This EULA is effective until terminated. Your rights under this EULA will
+terminate automatically without notice if you fail to comply with any term.
+Upon termination, you must cease all use of the Software and destroy all copies.
+
+9. GOVERNING LAW
+----------------
+This EULA shall be governed by the laws of the jurisdiction where Licensor is
+established, without regard to conflict of law principles.
+
+10. CONTACT
+-----------
+For questions regarding this EULA, contact:
+  Wexo
+  Email: legal@wexo.app
+  Website: https://wexo.app
+
+By clicking "I Agree" or installing the Software, you acknowledge that you have
+read this EULA, understand it, and agree to be bound by its terms and
+conditions.

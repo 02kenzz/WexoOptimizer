@@ -35,7 +35,9 @@
     "browserHint": "Open the desktop app to read real system data.",
     "backendUnavailable": "The Wexo Optimizer backend is not available. Open the desktop app.",
     "error": "Could not load information",
-    "retry": "Retry"
+    "retry": "Retry",
+    "applied": "Applied",
+    "failed": "Failed"
   },
   "risk": {
     "low": "Low",
@@ -104,7 +106,7 @@
     "openMonitor": "Open monitor",
     "openMonitorHint": "Live metrics, processes and alerts",
     "viewDiagnostics": "View full diagnostic",
-    "engineNote": "The optimization engine with rollback lands in M2.",
+    "engineNote": "Every change stores a snapshot and can be reverted from History.",
     "systemReady": "Your PC is running perfectly",
     "maxPerformance": "Maximum performance",
     "systemReadyDesc": "We've analyzed your system and it's ready to stay at its best.",
@@ -119,10 +121,6 @@
     "hardwareStatus": "Hardware status",
     "cpuTemp": "CPU temperature",
     "gpuTemp": "GPU temperature",
-    "recentActivity": "Recent activity",
-    "activityDiagnosticCompleted": "Performance analysis completed",
-    "activityTempCleaned": "Temporary files removed (2.4 GB)",
-    "activityStartupOptimized": "Startup registry optimized",
     "gamingMode": "Gaming mode",
     "gamingModeDesc": "Maximum performance for your games with one click.",
     "activateGaming": "Activate"
@@ -175,12 +173,22 @@
     "title": "Optimizations",
     "subtitle": "Atomic, explained and reversible changes",
     "all": "All",
-    "previewNote": "Experience preview. The real engine with snapshot and rollback lands in M2.",
+    "previewNote": "Preview without changing anything: the dry run validates the snapshot and system requirements.",
     "unavailable": "Not available yet",
     "expand": "View technical rationale",
     "why": "Why",
     "what": "What it does",
-    "empty": "No optimizations in this category"
+    "empty": "No optimizations in this category",
+    "note": "Select the changes and apply them: each one is verified and logged so it can be reverted.",
+    "requiresAdmin": "Requires administrator",
+    "incompatible": "Not compatible with this machine",
+    "preview": "Preview",
+    "previewOk": "Dry run passed: {{count}} change(s) would be applied.",
+    "appliedOk": "{{count}} optimization(s) applied and verified.",
+    "revert": "Revert",
+    "lastChange": "Last change",
+    "reverted": "Changes reverted.",
+    "adminHint": "System optimizations require administrator permissions."
   },
   "monitor": {
     "title": "Monitor",
@@ -246,7 +254,17 @@
     "admin": "Administrator",
     "standard": "Standard user",
     "saved": "Changes are saved automatically",
-    "tray": "Minimize to tray"
+    "tray": "Minimize to tray",
+    "actions": "Actions",
+    "openLogs": "Logs folder",
+    "open": "Open",
+    "reset": "Reset settings",
+    "resetHint": "Restores the default values.",
+    "resetAction": "Reset",
+    "resetDone": "Settings restored.",
+    "restartAdmin": "Restart as administrator",
+    "restartAdminHint": "Required to apply system optimizations.",
+    "adminAlready": "Already running with administrator permissions."
   },
   "tools": {
     "cleanup": "Cleanup",
@@ -268,7 +286,7 @@
     "trim": "TRIM (SSD)",
     "checkDisk": "Check disk",
     "systemInfo": "System info",
-    "windowsVersion": "Windows",
+    "windowsVersion": "System",
     "architecture": "Architecture",
     "appVersion": "App version",
     "runtime": "Runtime",
@@ -289,7 +307,7 @@
       },
       "diskSpace": {
         "title": "Low space on {{mount}}",
-        "desc": "Only {{freeGb}} GB free ({{freePercent}}%). Windows needs space for the page file and updates."
+        "desc": "Only {{freeGb}} GB free ({{freePercent}}%). The system needs space for paging and updates."
       },
       "diskHddSystem": {
         "title": "Mechanical drive as the primary disk",

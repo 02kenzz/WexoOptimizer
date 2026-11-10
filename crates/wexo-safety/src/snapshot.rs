@@ -1,4 +1,9 @@
 //! Snapshot capture and restore for atomic optimization rollback.
+//!
+//! Windows preserves registry values and service states; Linux preserves files
+//! and systemd unit states. Files are shared by both platforms, and files that
+//! did not exist before an optimization are recorded so rollback can delete
+//! whatever the tweak created.
 
 use std::collections::HashMap;
 use std::fs;
@@ -6,10 +11,12 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
-use serde_json;
 use thiserror::Error;
-use tracing::{debug};
+use tracing::debug;
+
+#[cfg(windows)]
 use winreg::enums::*;
+#[cfg(windows)]
 use winreg::{RegKey, RegValue};
 
 /// Errors that can occur during snapshot operations.
@@ -36,6 +43,9 @@ pub struct Snapshot {
     pub registry_values: HashMap<String, RegistryValue>,
     pub service_states: HashMap<String, ServiceState>,
     pub file_backups: HashMap<String, Vec<u8>>,
+    /// Files that did not exist before the optimization; rollback deletes them.
+    #[serde(default)]
+    pub absent_files: Vec<String>,
 }
 
 /// A single registry value captured for rollback.
@@ -47,7 +57,11 @@ pub struct RegistryValue {
     pub data: Vec<u8>,
 }
 
-/// A Windows service state captured for rollback.
+/// A captured service state.
+///
+/// Windows stores the `sc.exe` start type and state codes. Linux maps them to
+/// the same fields: `start_type` 0 means enabled and 1 disabled, `status` 1
+/// means running and 0 stopped.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ServiceState {
     pub name: String,
@@ -65,14 +79,21 @@ pub fn capture_snapshot(
     let id = format!("snap-{}", now_ms());
     let timestamp_ms = now_ms();
 
+    #[cfg(windows)]
     let mut registry_values = HashMap::new();
+    #[cfg(not(windows))]
+    let registry_values: HashMap<String, RegistryValue> = HashMap::new();
     let mut service_states = HashMap::new();
     let mut file_backups = HashMap::new();
+    let mut absent_files = Vec::new();
 
     // Capture registry keys
+    #[cfg(windows)]
     for key_path in &spec.registry_keys {
         capture_registry_key(&mut registry_values, key_path)?;
     }
+    #[cfg(not(windows))]
+    let _ = &spec.registry_keys;
 
     // Capture service states
     for service_name in &spec.services {
@@ -80,12 +101,14 @@ pub fn capture_snapshot(
         service_states.insert(service_name.clone(), state);
     }
 
-    // Backup files
+    // Backup files, remembering the ones that do not exist yet
     for file_path in &spec.files {
         let path = Path::new(file_path);
         if path.exists() {
             let data = fs::read(path)?;
             file_backups.insert(file_path.clone(), data);
+        } else {
+            absent_files.push(file_path.clone());
         }
     }
 
@@ -96,6 +119,7 @@ pub fn capture_snapshot(
         registry_values,
         service_states,
         file_backups,
+        absent_files,
     };
 
     // Persist snapshot to disk
@@ -111,9 +135,12 @@ pub fn capture_snapshot(
 /// Restores a snapshot, rolling back all captured state.
 pub fn restore_snapshot(snapshot: &Snapshot) -> Result<(), SnapshotError> {
     // Restore registry values
+    #[cfg(windows)]
     for (_key, value) in &snapshot.registry_values {
         restore_registry_value(value)?;
     }
+    #[cfg(not(windows))]
+    let _ = &snapshot.registry_values;
 
     // Restore service states
     for (name, state) in &snapshot.service_states {
@@ -122,7 +149,19 @@ pub fn restore_snapshot(snapshot: &Snapshot) -> Result<(), SnapshotError> {
 
     // Restore files
     for (path, data) in &snapshot.file_backups {
+        if let Some(parent) = Path::new(path).parent() {
+            fs::create_dir_all(parent)?;
+        }
         fs::write(path, data)?;
+    }
+
+    // Delete the files the optimization created
+    for path in &snapshot.absent_files {
+        match fs::remove_file(path) {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
     }
 
     debug!(snapshot_id = %snapshot.id, "snapshot restored");
@@ -154,13 +193,18 @@ pub fn list_snapshots(snapshot_dir: &Path) -> Result<Vec<Snapshot>, SnapshotErro
     Ok(snapshots)
 }
 
+#[cfg(windows)]
 fn capture_registry_key(
     values: &mut HashMap<String, RegistryValue>,
     key_path: &str,
 ) -> Result<(), SnapshotError> {
     let (root_key, sub_key) = parse_registry_path(key_path)?;
     let hklm = RegKey::predef(root_key);
-    let key = hklm.open_subkey_with_flags(sub_key, KEY_READ)?;
+    let key = match hklm.open_subkey_with_flags(sub_key, KEY_READ) {
+        Ok(key) => key,
+        // Una clave inexistente no tiene estado que preservar: la crea la optimización.
+        Err(_) => return Ok(()),
+    };
 
     for value in key.enum_values().map(|v| v.unwrap()) {
         let (value_type, data) = match value.1.vtype {
@@ -191,6 +235,7 @@ fn capture_registry_key(
     Ok(())
 }
 
+#[cfg(windows)]
 fn capture_subkeys(
     values: &mut HashMap<String, RegistryValue>,
     parent_key: &RegKey,
@@ -212,6 +257,7 @@ fn capture_subkeys(
     Ok(())
 }
 
+#[cfg(windows)]
 fn restore_registry_value(value: &RegistryValue) -> Result<(), SnapshotError> {
     let (root_key, sub_key) = parse_registry_path(&value.key_path)?;
     let hklm = RegKey::predef(root_key);
@@ -252,6 +298,7 @@ fn restore_registry_value(value: &RegistryValue) -> Result<(), SnapshotError> {
     Ok(())
 }
 
+#[cfg(windows)]
 fn capture_service_state(name: &str) -> Result<ServiceState, SnapshotError> {
     use std::process::Command;
 
@@ -294,6 +341,20 @@ fn capture_service_state(name: &str) -> Result<ServiceState, SnapshotError> {
     })
 }
 
+#[cfg(not(windows))]
+fn capture_service_state(name: &str) -> Result<ServiceState, SnapshotError> {
+    let enabled = run_systemctl(&["is-enabled", name])?;
+    let active = run_systemctl(&["is-active", name])?;
+
+    Ok(ServiceState {
+        name: name.to_string(),
+        start_type: u32::from(enabled.trim() != "enabled"),
+        status: u32::from(active.trim() == "active"),
+        description: None,
+    })
+}
+
+#[cfg(windows)]
 fn restore_service_state(name: &str, state: &ServiceState) -> Result<(), SnapshotError> {
     use std::process::Command;
 
@@ -318,6 +379,29 @@ fn restore_service_state(name: &str, state: &ServiceState) -> Result<(), Snapsho
     Ok(())
 }
 
+#[cfg(not(windows))]
+fn restore_service_state(name: &str, state: &ServiceState) -> Result<(), SnapshotError> {
+    use std::process::Command;
+
+    let start_action = if state.start_type == 0 { "enable" } else { "disable" };
+    let _ = Command::new("systemctl").args([start_action, name]).status();
+
+    let run_action = if state.status == 1 { "start" } else { "stop" };
+    let _ = Command::new("systemctl").args([run_action, name]).status();
+
+    Ok(())
+}
+
+#[cfg(not(windows))]
+fn run_systemctl(args: &[&str]) -> Result<String, SnapshotError> {
+    let output = std::process::Command::new("systemctl")
+        .args(args)
+        .output()
+        .map_err(|error| SnapshotError::Service(format!("systemctl {}: {error}", args.join(" "))))?;
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+#[cfg(windows)]
 fn parse_registry_path(path: &str) -> Result<(winreg::HKEY, String), SnapshotError> {
     let upper = path.to_uppercase();
     if upper.starts_with("HKLM\\") {
@@ -333,6 +417,7 @@ fn parse_registry_path(path: &str) -> Result<(winreg::HKEY, String), SnapshotErr
     }
 }
 
+#[cfg(windows)]
 fn parse_sc_start_type(config: &str) -> Option<u32> {
     for line in config.lines() {
         if line.contains("START_TYPE") {
@@ -342,6 +427,7 @@ fn parse_sc_start_type(config: &str) -> Option<u32> {
     None
 }
 
+#[cfg(windows)]
 fn parse_sc_state(query: &str) -> Option<u32> {
     for line in query.lines() {
         if line.contains("STATE") {
@@ -361,14 +447,62 @@ fn now_ms() -> u64 {
         .unwrap_or(0)
 }
 
-#[cfg(test)]
+#[cfg(all(test, windows))]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
 
     #[test]
     fn parse_registry_paths() {
         assert_eq!(parse_registry_path("HKLM\\SOFTWARE\\Test").unwrap().0, winreg::enums::HKEY_LOCAL_MACHINE);
         assert_eq!(parse_registry_path("HKCU\\SOFTWARE\\Test").unwrap().0, winreg::enums::HKEY_CURRENT_USER);
+    }
+}
+
+#[cfg(all(test, not(windows)))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn absent_files_are_deleted_on_restore() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let target = dir.path().join("created.conf");
+        std::fs::write(&target, "temporary").expect("write");
+
+        let snapshot = Snapshot {
+            id: "snap-test".to_string(),
+            timestamp_ms: 1,
+            optimization_ids: vec!["test".to_string()],
+            registry_values: HashMap::new(),
+            service_states: HashMap::new(),
+            file_backups: HashMap::new(),
+            absent_files: vec![target.to_string_lossy().to_string()],
+        };
+
+        restore_snapshot(&snapshot).expect("restore");
+        assert!(!target.exists());
+        // A second restore is a no-op instead of failing.
+        restore_snapshot(&snapshot).expect("restore twice");
+    }
+
+    #[test]
+    fn file_backups_are_restored() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let target = dir.path().join("existing.conf");
+        std::fs::write(&target, "changed").expect("write");
+
+        let mut backups = HashMap::new();
+        backups.insert(target.to_string_lossy().to_string(), b"original".to_vec());
+        let snapshot = Snapshot {
+            id: "snap-test".to_string(),
+            timestamp_ms: 1,
+            optimization_ids: vec!["test".to_string()],
+            registry_values: HashMap::new(),
+            service_states: HashMap::new(),
+            file_backups: backups,
+            absent_files: Vec::new(),
+        };
+
+        restore_snapshot(&snapshot).expect("restore");
+        assert_eq!(std::fs::read_to_string(&target).expect("read"), "original");
     }
 }

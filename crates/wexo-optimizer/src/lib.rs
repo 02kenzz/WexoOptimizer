@@ -74,6 +74,7 @@ mod tests {
             applies_to: Applicability::default(),
             snapshot: SnapshotSpec::default(),
             available: false,
+            requires_admin: false,
         }
     }
 

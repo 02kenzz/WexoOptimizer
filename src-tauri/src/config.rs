@@ -12,8 +12,9 @@ pub enum ConfigError {
     Json(#[from] serde_json::Error),
 }
 
-/// Well-known locations used by the app. Everything lives under
-/// `%LOCALAPPDATA%\WexoOptimizer` so uninstalling is a simple directory removal.
+/// Well-known locations used by the app. Everything lives under one per-user
+/// directory (`%LOCALAPPDATA%` on Windows, `$XDG_DATA_HOME` elsewhere), so
+/// uninstalling is a simple directory removal.
 #[derive(Debug, Clone)]
 pub struct AppPaths {
     pub base_dir: PathBuf,
@@ -25,10 +26,7 @@ pub struct AppPaths {
 
 impl AppPaths {
     pub fn discover() -> Self {
-        let base_dir = std::env::var_os("LOCALAPPDATA")
-            .map(PathBuf::from)
-            .unwrap_or_else(std::env::temp_dir)
-            .join("WexoOptimizer");
+        let base_dir = data_dir().join("WexoOptimizer");
 
         Self {
             settings_file: base_dir.join("settings.json"),
@@ -46,6 +44,28 @@ impl AppPaths {
         fs::create_dir_all(&self.rules_dir)?;
         Ok(())
     }
+}
+
+/// Per-user data directory for the current platform.
+#[cfg(windows)]
+fn data_dir() -> PathBuf {
+    std::env::var_os("LOCALAPPDATA")
+        .map(PathBuf::from)
+        .unwrap_or_else(std::env::temp_dir)
+}
+
+/// Per-user data directory following the XDG base-directory spec.
+#[cfg(not(windows))]
+fn data_dir() -> PathBuf {
+    if let Some(xdg) = std::env::var_os("XDG_DATA_HOME") {
+        if !xdg.is_empty() {
+            return PathBuf::from(xdg);
+        }
+    }
+    std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .map(|home| home.join(".local/share"))
+        .unwrap_or_else(std::env::temp_dir)
 }
 
 /// Loads settings, falling back to safe defaults.

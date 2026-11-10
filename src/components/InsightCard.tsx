@@ -1,3 +1,4 @@
+import { Activity } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/Badge";
@@ -15,34 +16,57 @@ export function InsightCard({ bottleneck }: { bottleneck: Bottleneck }) {
   const params = evidenceParams(bottleneck);
 
   return (
-    <article className="rounded-xl border border-border/30 bg-panel/50 p-4 transition-colors hover:border-border/50">
-      <div className="flex items-center justify-between gap-2">
+    <article className="panel panel-pad">
+      <div className="panel-head">
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span className="tool-icon" style={{ width: 32, height: 32, borderRadius: 10 }}>
+            <Activity size={15} strokeWidth={2} aria-hidden />
+          </span>
+          <div>
+            <h3 style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1.35 }}>
+              {t(`${rule}.title`, params)}
+            </h3>
+            <p
+              style={{
+                marginTop: 3,
+                fontSize: 9.5,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "var(--dim)",
+              }}
+            >
+              {t(`components.${bottleneck.component}`)}
+            </p>
+          </div>
+        </div>
         <Badge tone={severityTone(bottleneck.severity)} dot>
           {t(`severity.${bottleneck.severity}`)}
         </Badge>
-        <span className="text-[10px] uppercase tracking-wider text-text-dim">
-          {t(`components.${bottleneck.component}`)}
-        </span>
       </div>
-      <h3 className="mt-3 text-sm font-medium leading-snug text-text">
-        {t(`${rule}.title`, params)}
-      </h3>
-      <p className="mt-1.5 text-xs leading-relaxed text-text-dim">{t(`${rule}.desc`, params)}</p>
+
+      <p style={{ fontSize: 11.5, lineHeight: 1.6, color: "var(--mut)" }}>
+        {t(`${rule}.desc`, params)}
+      </p>
 
       {bottleneck.evidence.length > 0 ? (
-        <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 10 }}>
           {bottleneck.evidence.map((item) => (
-            <li
-              key={item.code}
-              className="text-[10px] tabular-nums text-text-dim before:mr-1 before:text-text-dim/50 before:content-['·']"
-            >
+            <span key={item.code} className="chip chip-muted">
               {t(`insights.evidence.${item.code}`, { value: item.value })}
-            </li>
+            </span>
           ))}
-        </ul>
+        </div>
       ) : null}
 
-      <p className="mt-3 text-[10px] uppercase tracking-wider text-text-dim/80">
+      <p
+        style={{
+          marginTop: 10,
+          fontSize: 9.5,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "var(--dim)",
+        }}
+      >
         {t("diagnostics.confidence", { value: t(`confidence.${bottleneck.confidence}`) })}
       </p>
     </article>

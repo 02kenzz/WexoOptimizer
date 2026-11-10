@@ -8,7 +8,8 @@
 <h1 align="center">Wexo Optimizer</h1>
 
 <p align="center">
-  <strong>Windows system control center — diagnose, optimize, monitor.</strong><br>
+  <strong>System control center — diagnose, optimize, monitor.</strong><br>
+  Runs on Windows 10/11 and Linux (GNOME, systemd).
   Every change is atomic, reversible, and verifiable.
 </p>
 
@@ -26,11 +27,11 @@
 | Feature | Description |
 |---------|-------------|
 | **Diagnose** | Live hardware telemetry — CPU, GPU, memory, disks, network, thermals |
-| **Optimize** | One-click toggles for services, power plans, telemetry, visual effects, startup |
+| **Optimize** | One-click toggles for services, power plans, telemetry, visual effects and kernel tuning (Windows and Linux) |
 | **Monitor** | Circular buffers, bottleneck detection, historical trends |
 | **Safety** | Snapshots before every change, SQLite transaction log, one-click rollback |
 
-> **Status: M0 · Foundation** — Shell works (Tauri v2 + React), live hardware diagnostics running. Optimization engine (M2) in progress.
+> **Status:** shell, monitoring, optimization engine and rollback work on Windows and Linux. Windows ships seven registry/service/power tweaks; Linux ships GNOME animations, Bluetooth and `vm.swappiness`.
 
 ---
 
@@ -46,6 +47,8 @@ Start-Process "$env:TEMP\wexo-setup.exe" -Wait
 
 > **SmartScreen warning?** The installer is unsigned (open source, no cert budget). Click *More info → Run anyway*. [Why?](https://github.com/02kenzz/WexoOptimizer#code-signing)
 
+> **Administrator rights:** the app elevates itself every time it starts (UAC on Windows, `pkexec` on Linux). If you decline the prompt it still opens, but the tweaks marked *Requires administrator* stay disabled. Launch it with `--no-elevate` to skip the prompt deliberately.
+
 ### Build from source
 
 ```bash
@@ -58,15 +61,29 @@ npm run tauri dev        # Dev app with Rust backend
 npm run dev              # Frontend only (mocked data)
 ```
 
+### Build from source (Linux)
+
+```bash
+# Prerequisites: Node 20+, Rust stable, WebKitGTK and the usual Tauri deps
+sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file \
+  libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+npm install
+npm run tauri dev
+```
+
+Linux tweaks drive GNOME (`gsettings`), systemd and sysctl. When a change needs
+root, the app relaunches through `pkexec`; snapshots keep systemd unit states and
+every file they touch — including files the tweak created, which rollback removes.
+
 ---
 
 ## 🏗 Architecture
 
 ```
 crates/wexo-core       Pure domain types (no Windows deps) — testable logic
-crates/wexo-sysinfo    Hardware/OS collectors (sysinfo, WMI, PDH)
+crates/wexo-sysinfo    Hardware/OS collectors (sysinfo; WMI/PDH on Windows, /sys on Linux)
 crates/wexo-optimizer  Optimization registry + atomic apply/verify/rollback engine
-crates/wexo-safety     Preflight checks, registry/service/file snapshots, SQLite txn log
+crates/wexo-safety     Preflight checks, registry/file/systemd snapshots, SQLite txn log
 crates/wexo-rules      Rules engine → recommendations (planned M4)
 crates/wexo-monitor    Metrics sampling, circular buffers, bottleneck detection (planned M3)
 src-tauri              Tauri shell, commands, state, logging

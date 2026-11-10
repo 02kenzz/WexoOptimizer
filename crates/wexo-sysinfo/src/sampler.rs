@@ -48,9 +48,27 @@ impl LiveSampler {
     /// Samples dynamic metrics. Percentages are 0-100 and rates are per second.
     pub fn sample(&mut self) -> LiveMetrics {
         self.system.refresh_cpu_usage();
+
+        // Take the per-core snapshot before refreshing the frequency: sysinfo
+        // 0.33 on Windows reports 100% for every core once frequency data is
+        // refreshed on the same `System` instance.
+        let per_core_percent: Vec<f32> = self
+            .system
+            .cpus()
+            .iter()
+            .map(|cpu| cpu.cpu_usage())
+            .collect();
+
         // Cheap single syscall, and without it `cpu.frequency()` stays at 0
         // because only the usage counters were refreshed.
         self.system.refresh_cpu_frequency();
+        let cpu_frequency_mhz = self
+            .system
+            .cpus()
+            .first()
+            .map(|cpu| cpu.frequency())
+            .unwrap_or(0);
+
         self.system.refresh_memory();
         self.networks.refresh(true);
 
@@ -59,10 +77,6 @@ impl LiveSampler {
             .as_mut()
             .map(|sampler| sampler.sample())
             .unwrap_or_default();
-
-        let cpus = self.system.cpus();
-        let per_core_percent: Vec<f32> = cpus.iter().map(|cpu| cpu.cpu_usage()).collect();
-        let cpu_frequency_mhz = cpus.first().map(|cpu| cpu.frequency()).unwrap_or(0);
 
         let total_memory = self.system.total_memory();
         let used_memory = self.system.used_memory();

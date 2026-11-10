@@ -35,7 +35,9 @@
     "browserHint": "Abre la aplicación de escritorio para leer datos reales del sistema.",
     "backendUnavailable": "El backend de Wexo Optimizer no está disponible. Abre la aplicación de escritorio.",
     "error": "No se pudo cargar la información",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "applied": "Aplicado",
+    "failed": "Falló"
   },
   "risk": {
     "low": "Bajo",
@@ -104,7 +106,7 @@
     "openMonitor": "Abrir monitor",
     "openMonitorHint": "Métricas en vivo, procesos y alertas",
     "viewDiagnostics": "Ver diagnóstico completo",
-    "engineNote": "El motor de optimización con rollback llega en M2.",
+    "engineNote": "Cada cambio guarda un snapshot y se puede revertir desde Historial.",
     "systemReady": "Tu PC funciona perfectamente",
     "maxPerformance": "Rendimiento al máximo",
     "systemReadyDesc": "Hemos analizado tu sistema y está listo para mantenerse en su mejor versión.",
@@ -119,10 +121,6 @@
     "hardwareStatus": "Estado del hardware",
     "cpuTemp": "Temperatura CPU",
     "gpuTemp": "Temperatura GPU",
-    "recentActivity": "Actividad reciente",
-    "activityDiagnosticCompleted": "Análisis de rendimiento completado",
-    "activityTempCleaned": "Archivos temporales eliminados (2,4 GB)",
-    "activityStartupOptimized": "Registro de inicio optimizado",
     "gamingMode": "Modo gaming",
     "gamingModeDesc": "Máximo rendimiento para tus juegos con un solo clic.",
     "activateGaming": "Activar"
@@ -175,12 +173,22 @@
     "title": "Optimizaciones",
     "subtitle": "Cambios atómicos, explicados y reversibles",
     "all": "Todas",
-    "previewNote": "Vista previa de la experiencia. El motor real con snapshot y rollback llega en M2.",
+    "previewNote": "Previsualiza sin tocar nada: la simulación valida el snapshot y los requisitos del sistema.",
     "unavailable": "No disponible aún",
     "expand": "Ver explicación técnica",
     "why": "Por qué",
     "what": "Qué hace",
-    "empty": "No hay optimizaciones en esta categoría"
+    "empty": "No hay optimizaciones en esta categoría",
+    "note": "Selecciona los cambios y aplícalos: cada uno se verifica y queda registrado para poder revertirlo.",
+    "requiresAdmin": "Requiere administrador",
+    "incompatible": "No compatible con este equipo",
+    "preview": "Previsualizar",
+    "previewOk": "Simulación correcta: se aplicarían {{count}} cambio(s).",
+    "appliedOk": "{{count}} optimización(es) aplicadas y verificadas.",
+    "revert": "Revertir",
+    "lastChange": "Último cambio",
+    "reverted": "Cambios revertidos.",
+    "adminHint": "Las optimizaciones del sistema necesitan permisos de administrador."
   },
   "monitor": {
     "title": "Monitor",
@@ -246,7 +254,17 @@
     "admin": "Administrador",
     "standard": "Usuario estándar",
     "saved": "Los cambios se guardan automáticamente",
-    "tray": "Minimizar a la bandeja"
+    "tray": "Minimizar a la bandeja",
+    "actions": "Acciones",
+    "openLogs": "Carpeta de logs",
+    "open": "Abrir",
+    "reset": "Restablecer ajustes",
+    "resetHint": "Vuelve a los valores por defecto.",
+    "resetAction": "Restablecer",
+    "resetDone": "Ajustes restablecidos.",
+    "restartAdmin": "Reiniciar como administrador",
+    "restartAdminHint": "Necesario para aplicar optimizaciones del sistema.",
+    "adminAlready": "Ya se está ejecutando con permisos de administrador."
   },
   "tools": {
     "cleanup": "Limpieza",
@@ -268,7 +286,7 @@
     "trim": "TRIM (SSD)",
     "checkDisk": "Comprobar disco",
     "systemInfo": "Información del sistema",
-    "windowsVersion": "Windows",
+    "windowsVersion": "Sistema",
     "architecture": "Arquitectura",
     "appVersion": "Versión app",
     "runtime": "Runtime",
@@ -289,7 +307,7 @@
       },
       "diskSpace": {
         "title": "Poco espacio en {{mount}}",
-        "desc": "Solo quedan {{freeGb}} GB libres ({{freePercent}}%). Windows necesita espacio para el archivo de paginación y las actualizaciones."
+        "desc": "Solo quedan {{freeGb}} GB libres ({{freePercent}}%). El sistema necesita espacio para la paginación y las actualizaciones."
       },
       "diskHddSystem": {
         "title": "Disco mecánico como unidad principal",

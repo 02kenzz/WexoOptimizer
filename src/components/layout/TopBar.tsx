@@ -1,87 +1,189 @@
-import { Languages, Monitor, Moon, ShieldAlert, ShieldCheck, Sun } from "lucide-react";
+import {
+  Activity,
+  ArrowUpRight,
+  Languages,
+  LayoutDashboard,
+  Monitor,
+  Moon,
+  ScanSearch,
+  Search,
+  ShieldAlert,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+  Sun,
+  Wrench,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import { Button } from "@/components/ui/Button";
 import { Tooltip } from "@/components/ui/Switch";
 import { isDesktop } from "@/lib/ipc";
 import { useAppStore } from "@/stores/appStore";
 
-const PAGE_META: Record<string, { title: string; subtitle: string }> = {
-  "/dashboard": { title: "dashboard.title", subtitle: "dashboard.subtitle" },
-  "/diagnostics": { title: "diagnostics.title", subtitle: "diagnostics.subtitle" },
-  "/optimizations": { title: "optimizations.title", subtitle: "optimizations.subtitle" },
-  "/monitor": { title: "monitor.title", subtitle: "monitor.subtitle" },
-  "/history": { title: "history.title", subtitle: "history.subtitle" },
-  "/settings": { title: "settings.title", subtitle: "settings.subtitle" },
+const PAGE_META: Record<string, { titleKey: string; subtitleKey: string }> = {
+  "/dashboard": { titleKey: "nav.dashboard", subtitleKey: "dashboard.subtitle" },
+  "/diagnostics": { titleKey: "nav.diagnostics", subtitleKey: "diagnostics.subtitle" },
+  "/optimizations": { titleKey: "nav.optimizations", subtitleKey: "optimizations.subtitle" },
+  "/monitor": { titleKey: "nav.monitor", subtitleKey: "monitor.subtitle" },
+  "/tools": { titleKey: "nav.tools", subtitleKey: "app.tagline" },
+  "/history": { titleKey: "nav.history", subtitleKey: "history.subtitle" },
+  "/settings": { titleKey: "nav.settings", subtitleKey: "settings.subtitle" },
 };
+
+const COMMANDS = [
+  { path: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { path: "/diagnostics", labelKey: "nav.diagnostics", icon: ScanSearch },
+  { path: "/optimizations", labelKey: "nav.optimizations", icon: Sparkles },
+  { path: "/monitor", labelKey: "nav.monitor", icon: Activity },
+  { path: "/tools", labelKey: "nav.tools", icon: Wrench },
+  { path: "/history", labelKey: "nav.history", icon: Activity },
+  { path: "/settings", labelKey: "nav.settings", icon: SlidersHorizontal },
+];
 
 export function TopBar() {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
   const settings = useAppStore((state) => state.settings);
   const appInfo = useAppStore((state) => state.appInfo);
   const updateSettings = useAppStore((state) => state.updateSettings);
 
-  const meta = PAGE_META[location.pathname] ?? PAGE_META["/dashboard"];
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const isDark = settings.theme === "dark" || settings.theme === "system";
+  const meta = PAGE_META[location.pathname] ?? PAGE_META["/dashboard"];
+  const isDark = settings.theme !== "light";
+
+  const results = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return [];
+    return COMMANDS.filter((command) =>
+      t(command.labelKey).toLowerCase().includes(term),
+    ).slice(0, 5);
+  }, [query, t]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        inputRef.current?.focus();
+      }
+      if (event.key === "Escape") {
+        setOpen(false);
+        inputRef.current?.blur();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  const go = (path: string) => {
+    navigate(path);
+    setQuery("");
+    setOpen(false);
+    inputRef.current?.blur();
+  };
 
   return (
-    <header className="z-10 flex h-18 shrink-0 items-center justify-between gap-4 border-b border-border/30 bg-bg-elevated/60 px-5 backdrop-blur-2xl lg:px-8">
-      <div className="min-w-0">
-        <h1 className="truncate text-lg font-semibold tracking-tight text-text">{t(meta.title)}</h1>
-        <p className="truncate text-xs text-text-dim">{t(meta.subtitle)}</p>
+    <header className="topbar">
+      <div className="page-id">
+        <h1>{t(meta.titleKey)}</h1>
+        <p>{t(meta.subtitleKey)}</p>
       </div>
 
-      <div className="flex items-center gap-2">
-        {!isDesktop ? (
-          <Tooltip label={t("common.browserHint")}>
-            <span className="hidden rounded-full border border-warn/30 bg-warn/10 px-2.5 py-1 text-[11px] text-warn sm:inline-flex">
-              {t("app.browserMode")}
-            </span>
-          </Tooltip>
-        ) : null}
+      <div className="topbar-tools">
+        <label className="search">
+          <Search size={15} aria-hidden />
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => window.setTimeout(() => setOpen(false), 120)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && results[0]) go(results[0].path);
+            }}
+            placeholder={t("dashboard.searchPlaceholder")}
+            aria-label={t("dashboard.searchPlaceholder")}
+            spellCheck={false}
+          />
+          <kbd>Ctrl K</kbd>
 
-        <span className="hidden items-center gap-1.5 rounded-full border border-border/30 bg-panel/50 px-2.5 py-1 text-[11px] text-text-dim sm:inline-flex">
-          {appInfo?.isAdmin ? (
-            <ShieldCheck className="size-3.5 text-ok" aria-hidden />
-          ) : (
-            <ShieldAlert className="size-3.5 text-warn" aria-hidden />
-          )}
-          {appInfo?.isAdmin ? t("app.admin") : t("app.standard")}
-        </span>
+          {open && results.length > 0 ? (
+            <div className="palette" role="listbox">
+              {results.map((command) => {
+                const Icon = command.icon;
+                return (
+                  <button
+                    key={command.path}
+                    type="button"
+                    className="palette-item"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => go(command.path)}
+                  >
+                    <Icon size={14} aria-hidden />
+                    {t(command.labelKey)}
+                    <ArrowUpRight size={13} style={{ marginLeft: "auto", opacity: 0.5 }} />
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+        </label>
 
         <Tooltip label={settings.language === "es" ? "Switch to English" : "Cambiar a español"}>
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
+            className="icon-btn"
             aria-label={t("settings.language")}
             onClick={() =>
               void updateSettings({ language: settings.language === "es" ? "en" : "es" })
             }
           >
-            <Languages className="size-4" aria-hidden />
-            <span className="font-mono text-[11px] uppercase text-text-muted">{settings.language}</span>
-          </Button>
+            <Languages size={15} aria-hidden />
+            <span className="code">{settings.language}</span>
+          </button>
         </Tooltip>
 
         <Tooltip label={t("settings.theme")}>
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
+            className="icon-btn"
             aria-label={t("settings.theme")}
             onClick={() => void updateSettings({ theme: isDark ? "light" : "dark" })}
           >
             {settings.theme === "high-contrast" ? (
-              <Monitor className="size-4" aria-hidden />
+              <Monitor size={15} aria-hidden />
             ) : isDark ? (
-              <Sun className="size-4" aria-hidden />
+              <Sun size={15} aria-hidden />
             ) : (
-              <Moon className="size-4" aria-hidden />
+              <Moon size={15} aria-hidden />
             )}
-          </Button>
+          </button>
         </Tooltip>
+
+        <span className={isDesktop ? "status-chip" : "status-chip warn"}>
+          {isDesktop ? <ShieldCheck size={13} aria-hidden /> : <ShieldAlert size={13} aria-hidden />}
+          {isDesktop ? t("dashboard.live") : t("app.browserMode")}
+        </span>
+
+        <span className="icon-btn admin-chip" style={{ pointerEvents: "none" }}>
+          {appInfo?.isAdmin ? (
+            <ShieldCheck size={15} aria-hidden />
+          ) : (
+            <ShieldAlert size={15} aria-hidden />
+          )}
+          <span className="code">
+            {appInfo?.isAdmin ? t("app.admin") : t("app.standard")}
+          </span>
+        </span>
       </div>
     </header>
   );

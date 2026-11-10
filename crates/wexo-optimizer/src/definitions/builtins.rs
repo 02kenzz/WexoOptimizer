@@ -27,7 +27,8 @@ pub fn disable_sysmain() -> OptimizationDef {
             services: vec!["SysMain".to_string()],
             files: vec![],
         },
-        available: false, // Set at runtime
+        available: false,
+        requires_admin: true, // Set at runtime
     };
 
     OptimizationDef::builder(meta)
@@ -72,6 +73,7 @@ pub fn disable_diagtrack() -> OptimizationDef {
             files: vec![],
         },
         available: false,
+        requires_admin: true,
     };
 
     OptimizationDef::builder(meta)
@@ -128,6 +130,7 @@ pub fn power_plan_ultimate() -> OptimizationDef {
             files: vec![],
         },
         available: false,
+        requires_admin: true,
     };
 
     OptimizationDef::builder(meta)
@@ -185,6 +188,7 @@ pub fn tcp_autotuning() -> OptimizationDef {
             files: vec![],
         },
         available: false,
+        requires_admin: true,
     };
 
     OptimizationDef::builder(meta)
@@ -256,6 +260,7 @@ pub fn enable_hags() -> OptimizationDef {
             files: vec![],
         },
         available: false,
+        requires_admin: true,
     };
 
     OptimizationDef::builder(meta)
@@ -312,11 +317,13 @@ pub fn reduce_visual_effects() -> OptimizationDef {
             conflicts_with: vec![],
         },
         snapshot: SnapshotSpec {
-            registry_keys: vec!["HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects".to_string()],
+            registry_keys: vec!["HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects".to_string(),
+                "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced".to_string()],
             services: vec![],
             files: vec![],
         },
         available: false,
+        requires_admin: false,
     };
 
     OptimizationDef::builder(meta)
@@ -366,49 +373,24 @@ pub fn reduce_visual_effects() -> OptimizationDef {
             }
         })
         .rollback(|| {
-            set_registry_value(
-                winreg::enums::HKEY_CURRENT_USER,
-                "Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects",
-                "VisualFXSetting",
-                winreg::enums::RegType::REG_DWORD as u32,
-                &1u32.to_le_bytes(),
-            )?;
+            // The snapshot restores whatever existed before; this only removes the
+            // values the tweak itself may have created.
+            let advanced = RegKey::predef(winreg::enums::HKEY_CURRENT_USER)
+                .open_subkey_with_flags(
+                    r"Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced",
+                    KEY_ALL_ACCESS,
+                )
+                .map_err(|error| error.to_string())?;
+            for name in [
+                "TaskbarAnimations",
+                "ListviewAlphaSelect",
+                "ListviewWatermark",
+                "ListviewShadow",
+                "DisableThumbnailPreview",
+            ] {
+                let _ = advanced.delete_value(name);
+            }
             Ok(())
-        })
-        .build()
-}
-
-/// Creates the "disable-startup-bloat" optimization.
-pub fn disable_startup_bloat() -> OptimizationDef {
-    let meta = Optimization {
-        id: "disable-startup-bloat".to_string(),
-        category: Category::Startup,
-        title: "Revisar aplicaciones de inicio".to_string(),
-        description: "Deshabilita entradas de inicio innecesarias detectadas por impacto medido de CPU, disco y tiempo de arranque.".to_string(),
-        rationale: "Cada aplicación de inicio añade latencia al login. Solo se desactivan entradas sin impacto funcional demostrado.".to_string(),
-        risk: RiskLevel::Low,
-        requires_reboot: false,
-        applies_to: Applicability {
-            os_min_build: Some("19044".to_string()),
-            hardware_filters: vec![],
-            conflicts_with: vec![],
-        },
-        snapshot: SnapshotSpec {
-            registry_keys: vec!["HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run".to_string()],
-            services: vec![],
-            files: vec![],
-        },
-        available: false,
-    };
-
-    OptimizationDef::builder(meta)
-        .apply(|| {
-            // This is a placeholder - actual implementation would analyze startup impact
-            // For now, we just document the capability
-            Ok("Startup optimization analyzed (requires user review)".to_string())
-        })
-        .verify(|| {
-            Ok(VerificationResult::Verified)
         })
         .build()
 }
@@ -434,6 +416,7 @@ pub fn ntfs_last_access() -> OptimizationDef {
             files: vec![],
         },
         available: false,
+        requires_admin: true,
     };
 
     OptimizationDef::builder(meta)
