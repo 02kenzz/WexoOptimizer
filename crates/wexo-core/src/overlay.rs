@@ -28,6 +28,8 @@ pub struct OverlayStats {
     pub network_tx_bytes_per_sec: u64,
     /// Frames per second of the foreground process.
     pub fps: Option<f32>,
+    /// `1% low` of the same frames: the rate the slowest 1% allows.
+    pub fps_low_1_percent: Option<f32>,
     #[ts(type = "number")]
     pub uptime_seconds: u64,
 }
@@ -48,6 +50,7 @@ mod tests {
             network_rx_bytes_per_sec: 1_000,
             network_tx_bytes_per_sec: 200,
             fps: Some(143.0),
+            fps_low_1_percent: Some(96.5),
             uptime_seconds: 600,
         };
 
@@ -55,5 +58,6 @@ mod tests {
         assert!(json.contains("\"cpuPercent\":12.5"), "{json}");
         assert!(json.contains("\"gpuPercent\":null"), "{json}");
         assert!(json.contains("\"fps\":143.0"), "{json}");
+        assert!(json.contains("\"fpsLow1Percent\":96.5"), "{json}");
     }
 }

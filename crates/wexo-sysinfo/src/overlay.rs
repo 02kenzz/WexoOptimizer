@@ -35,6 +35,12 @@ impl OverlayProbe {
     /// Builds one overlay snapshot from the latest monitor sample.
     pub fn sample(&mut self, metrics: &LiveMetrics) -> OverlayStats {
         self.ensure_running();
+        let (fps, fps_low_1_percent) = self
+            .fps
+            .as_ref()
+            .and_then(FpsMeter::foreground_frame_rate)
+            .map_or((None, None), |(rate, low)| (Some(rate), low));
+
         OverlayStats {
             cpu_percent: metrics.cpu_percent,
             gpu_percent: self.gpu.sample(),
@@ -44,7 +50,8 @@ impl OverlayProbe {
             disk_busy_percent: metrics.disk_busy_percent,
             network_rx_bytes_per_sec: metrics.network_rx_bytes_per_sec,
             network_tx_bytes_per_sec: metrics.network_tx_bytes_per_sec,
-            fps: self.fps.as_ref().and_then(FpsMeter::foreground_fps),
+            fps,
+            fps_low_1_percent,
             uptime_seconds: metrics.uptime_seconds,
         }
     }

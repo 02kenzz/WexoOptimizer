@@ -21,6 +21,12 @@ const MIN_SPAN: i64 = 2_500_000; // 250 ms
 const STALE_AFTER: Duration = Duration::from_secs(2);
 /// Processes that stopped presenting are dropped from the map after this long.
 const IDLE_AFTER: Duration = Duration::from_secs(60);
+/// Frame intervals kept for the 1% low: about 16 s at 60 fps.
+const INTERVAL_CAPACITY: usize = 1_000;
+/// Below this many frames a percentile says nothing useful.
+const MIN_INTERVALS: usize = 20;
+/// A gap longer than this is a pause in drawing, not a slow frame.
+const PAUSE_GAP: i64 = 10_000_000; // 1 s, in 100 ns units
 const SESSION_NAME: &str = "WexoOptimizerFps";
 
 /// One queue per event kind. The same frame is reported by several providers at
@@ -31,12 +37,29 @@ const SOURCES: usize = 5;
 #[derive(Default)]
 struct SourceFrames {
     queues: [VecDeque<i64>; SOURCES],
+    /// Frame-to-frame intervals per queue, newest last.
+    intervals: [VecDeque<i64>; SOURCES],
     /// Wall clock of the newest event per queue.
     last: [Option<Instant>; SOURCES],
 }
 
 impl SourceFrames {
     fn push(&mut self, source: usize, timestamp: i64, now: Instant) {
+        if let Some(previous) = self.queues[source].back().copied() {
+            let interval = timestamp - previous;
+            let intervals = &mut self.intervals[source];
+            if interval <= 0 || interval > PAUSE_GAP {
+                // Time went backwards, or the app stopped drawing: the old
+                // window no longer describes what is on screen.
+                intervals.clear();
+            } else {
+                if intervals.len() == INTERVAL_CAPACITY {
+                    intervals.pop_front();
+                }
+                intervals.push_back(interval);
+            }
+        }
+
         let queue = &mut self.queues[source];
         queue.push_back(timestamp);
         let cutoff = timestamp - FRAME_WINDOW;
@@ -48,13 +71,25 @@ impl SourceFrames {
 
     /// Busiest queue wins: OpenGL and Vulkan never pass through DXGI/D3D9, while
     /// D3D games are also seen by the kernel.
-    fn rate(&self) -> Option<f32> {
+    fn busiest(&self) -> Option<usize> {
         self.queues
             .iter()
             .zip(self.last.iter())
-            .filter(|(_, last)| last.is_some_and(|instant| instant.elapsed() <= STALE_AFTER))
-            .filter_map(|(queue, _)| rate_of(queue))
-            .reduce(f32::max)
+            .enumerate()
+            .filter(|(_, (_, last))| last.is_some_and(|instant| instant.elapsed() <= STALE_AFTER))
+            .filter_map(|(index, (queue, _))| rate_of(queue).map(|fps| (index, fps)))
+            .max_by(|(_, left), (_, right)| left.total_cmp(right))
+            .map(|(index, _)| index)
+    }
+
+    fn rate(&self) -> Option<f32> {
+        rate_of(&self.queues[self.busiest()?])
+    }
+
+    /// 1% low: the slowest frames are the ones a player feels, so this is the
+    /// 99th percentile frame time turned back into frames per second.
+    fn low_1_percent(&self) -> Option<f32> {
+        low_1_of(&self.intervals[self.busiest()?])
     }
 
     /// True while this process is still presenting frames.
@@ -75,6 +110,22 @@ fn rate_of(queue: &VecDeque<i64>) -> Option<f32> {
         return None;
     }
     let fps = (queue.len() - 1) as f64 * 10_000_000.0 / span as f64;
+    (0.1..=2_000.0).contains(&fps).then_some(fps as f32)
+}
+
+/// `1% low` of a set of frame intervals: the 99th percentile frame time, in FPS.
+fn low_1_of(intervals: &VecDeque<i64>) -> Option<f32> {
+    if intervals.len() < MIN_INTERVALS {
+        return None;
+    }
+    let mut slowest: Vec<i64> = intervals.iter().copied().collect();
+    slowest.sort_unstable_by(|left, right| right.cmp(left));
+    let index = ((slowest.len() as f64 * 0.01).ceil() as usize).clamp(1, slowest.len()) - 1;
+    let frame = slowest[index];
+    if frame <= 0 {
+        return None;
+    }
+    let fps = 10_000_000.0 / frame as f64;
     (0.1..=2_000.0).contains(&fps).then_some(fps as f32)
 }
 
@@ -100,15 +151,18 @@ impl Shared {
             .push(source, timestamp, now);
     }
 
-    /// Rate of `process_id`, dropping processes that stopped presenting.
-    fn measure(&self, process_id: u32) -> Option<f32> {
+    /// Frame rate and 1% low of `process_id`, dropping processes that stopped
+    /// presenting.
+    fn measure(&self, process_id: u32) -> Option<(f32, Option<f32>)> {
         let mut frames = match self.frames.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
-        let rate = frames.get(&process_id).and_then(SourceFrames::rate);
+        let measured = frames
+            .get(&process_id)
+            .and_then(|source| source.rate().map(|rate| (rate, source.low_1_percent())));
         frames.retain(|_, source| source.is_active());
-        rate
+        measured
     }
 
     /// Logs the first measurement of a foreground process and every change in
@@ -208,14 +262,17 @@ mod imp {
             })
         }
 
-        pub fn foreground_fps(&self) -> Option<f32> {
+        /// Frame rate of the foreground window plus its 1% low, when the present
+        /// events already describe one.
+        pub fn foreground_frame_rate(&self) -> Option<(f32, Option<f32>)> {
             let process_id = unsafe { foreground_process_id()? };
             if process_id == std::process::id() {
                 return None;
             }
-            let rate = self.shared.measure(process_id);
-            self.shared.log_transition(process_id, rate);
-            rate
+            let measured = self.shared.measure(process_id);
+            self.shared
+                .log_transition(process_id, measured.map(|(rate, _)| rate));
+            measured
         }
     }
 
@@ -378,7 +435,7 @@ mod imp {
             None
         }
 
-        pub fn foreground_fps(&self) -> Option<f32> {
+        pub fn foreground_frame_rate(&self) -> Option<(f32, Option<f32>)> {
             None
         }
     }
@@ -468,5 +525,43 @@ mod tests {
         }
         let fps = frames.rate().expect("rate");
         assert!((fps - 60.0).abs() < 1.5, "fps = {fps}");
+    }
+
+    #[test]
+    fn one_percent_low_reads_the_slowest_frames() {
+        let now = Instant::now();
+        let mut frames = SourceFrames::default();
+        let mut timestamp = 0i64;
+        frames.push(0, timestamp, now);
+        for index in 0..1_000 {
+            timestamp += if index % 100 == 0 { 333_333 } else { 83_333 };
+            frames.push(0, timestamp, now);
+        }
+        let rate = frames.rate().expect("rate");
+        assert!(rate > 100.0, "rate = {rate}");
+        let low = frames.low_1_percent().expect("1% low");
+        assert!(low > 20.0 && low < 40.0, "1% low = {low}");
+    }
+
+    #[test]
+    fn one_percent_low_needs_enough_frames() {
+        let now = Instant::now();
+        let mut frames = SourceFrames::default();
+        for index in 0..5 {
+            frames.push(0, index * 16_666, now);
+        }
+        assert_eq!(frames.low_1_percent(), None);
+    }
+
+    #[test]
+    fn a_pause_restarts_the_interval_window() {
+        let now = Instant::now();
+        let mut frames = SourceFrames::default();
+        for index in 0..60 {
+            frames.push(0, index * 16_666, now);
+        }
+        assert_eq!(frames.intervals[0].len(), 59);
+        frames.push(0, 60 * 16_666 + 2 * PAUSE_GAP, now);
+        assert_eq!(frames.intervals[0].len(), 0);
     }
 }

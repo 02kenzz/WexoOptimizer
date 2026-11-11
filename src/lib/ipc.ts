@@ -92,6 +92,16 @@ const defaultSettings: AppSettings = {
   updateChannel: "stable",
   telemetryEnabled: false,
   overlayEnabled: false,
+  overlay: {
+    showFps: true,
+    showCpu: true,
+    showGpu: true,
+    showRam: true,
+    showNetwork: true,
+    position: "top-right",
+    orientation: "vertical",
+    opacity: 0.92,
+  },
   dataDir: null,
 };
 
@@ -166,7 +176,15 @@ export const ipc = {
     }
     try {
       const raw = localStorage.getItem(SETTINGS_KEY);
-      return Promise.resolve(raw ? { ...defaultSettings, ...JSON.parse(raw) } : defaultSettings);
+      if (!raw) return Promise.resolve(defaultSettings);
+      const stored = JSON.parse(raw) as Partial<AppSettings>;
+      // Merge one level down so settings saved by older versions keep the
+      // defaults for fields that did not exist yet (e.g. overlay.orientation).
+      return Promise.resolve({
+        ...defaultSettings,
+        ...stored,
+        overlay: { ...defaultSettings.overlay, ...stored.overlay },
+      });
     } catch {
       return Promise.resolve(defaultSettings);
     }

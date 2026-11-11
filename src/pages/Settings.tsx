@@ -6,6 +6,7 @@ import {
   Monitor as MonitorIcon,
   Moon,
   RotateCcw,
+  Settings2,
   ShieldAlert,
   ShieldCheck,
   Sun,
@@ -17,7 +18,8 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { Switch } from "@/components/ui/Switch";
+import { OverlayConfigDialog } from "@/components/ui/OverlayConfigDialog";
+import { Switch, Tooltip } from "@/components/ui/Switch";
 import { ipc, isDesktop } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
@@ -74,6 +76,7 @@ export function Settings() {
   const updateSettings = useAppStore((state) => state.updateSettings);
   const resetSettings = useAppStore((state) => state.resetSettings);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [overlayOpen, setOverlayOpen] = useState(false);
 
   const openLogs = () => {
     setFeedback(null);
@@ -175,10 +178,22 @@ export function Settings() {
           </Row>
 
           <Row label={t("settings.overlay")} hint={t("settings.overlayHint")}>
-            <Switch
-              checked={settings.overlayEnabled}
-              onCheckedChange={(checked) => void updateSettings({ overlayEnabled: checked })}
-            />
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Tooltip label={t("settings.overlayConfigure")}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setOverlayOpen(true)}
+                  aria-label={t("settings.overlayConfigure")}
+                >
+                  <Settings2 size={14} aria-hidden />
+                </Button>
+              </Tooltip>
+              <Switch
+                checked={settings.overlayEnabled}
+                onCheckedChange={(checked) => void updateSettings({ overlayEnabled: checked })}
+              />
+            </div>
           </Row>
         </Section>
 
@@ -199,9 +214,7 @@ export function Settings() {
 
           <Row
             label={t("settings.restartAdmin")}
-            hint={
-              appInfo?.isAdmin ? t("settings.adminAlready") : t("settings.restartAdminHint")
-            }
+            hint={appInfo?.isAdmin ? t("settings.adminAlready") : t("settings.restartAdminHint")}
           >
             {appInfo?.isAdmin ? (
               <Badge tone="accent">
@@ -235,7 +248,15 @@ export function Settings() {
             </span>
           </Row>
           <Row label={t("settings.privileges")}>
-            <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--mut)" }}>
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 11,
+                color: "var(--mut)",
+              }}
+            >
               <ShieldCheck
                 size={13}
                 style={{ color: appInfo?.isAdmin ? "var(--ok)" : "var(--warn)" }}
@@ -249,6 +270,8 @@ export function Settings() {
           </Row>
         </Section>
       </div>
+
+      <OverlayConfigDialog open={overlayOpen} onOpenChange={setOverlayOpen} />
     </section>
   );
 }

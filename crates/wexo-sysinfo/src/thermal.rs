@@ -5,7 +5,7 @@
 //!
 //! * CPU: the ACPI thermal zone performance counters. Many desktops do not
 //!   publish a zone; those fall back to LibreHardwareMonitor's web server,
-//!   which is started minimized when it is installed and we are elevated.
+//!   which is started hidden when it is installed and we are elevated.
 //! * GPU: NVML, the library installed with the NVIDIA driver.
 //!
 //! Nothing is estimated here: a missing sensor is not a zero.
@@ -207,12 +207,16 @@ mod imp {
     use std::path::{Path, PathBuf};
     use std::process::{Command, Stdio};
     use std::ptr;
+    use std::time::Duration;
 
-    use windows_sys::Win32::Foundation::{FreeLibrary, FARPROC, HMODULE};
+    use windows_sys::Win32::Foundation::{FreeLibrary, FARPROC, HMODULE, BOOL, HWND, LPARAM};
     use windows_sys::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW};
     use windows_sys::Win32::System::Performance::{
         PdhAddEnglishCounterW, PdhCloseQuery, PdhCollectQueryData, PdhGetFormattedCounterArrayW,
         PdhOpenQueryW, PDH_FMT_COUNTERVALUE_ITEM_W, PDH_FMT_DOUBLE, PDH_MORE_DATA,
+    };
+    use windows_sys::Win32::UI::WindowsAndMessaging::{
+        EnumWindows, GetWindowThreadProcessId, ShowWindow, SW_HIDE,
     };
 
     use super::{celsius_from_tenths_kelvin, MAX_CELSIUS, MIN_CELSIUS};
@@ -226,13 +230,15 @@ mod imp {
         "LibreHardwareMonitor.LibreHardwareMonitor_Microsoft.Winget.Source_8wekyb3d8bbwe"
     );
 
-    /// Settings LibreHardwareMonitor needs to answer `/metrics` from the tray.
+    /// Settings LibreHardwareMonitor needs to answer `/metrics` while staying
+    /// out of sight: web server on loopback, no tray icon, start minimized.
     /// Every other preference in its file is left untouched.
-    const LHM_SETTINGS: [(&str, &str); 4] = [
+    const LHM_SETTINGS: [(&str, &str); 5] = [
         ("runWebServerMenuItem", "true"),
         ("listenerIp", "127.0.0.1"),
         ("listenerPort", "8085"),
         ("startMinMenuItem", "true"),
+        ("minTrayMenuItem", "false"),
     ];
 
     const LHM_DEFAULT_CONFIG: &str = r#"<?xml version="1.0" encoding="utf-8"?>
@@ -321,7 +327,7 @@ mod imp {
             .find(|candidate| candidate.is_file())
     }
 
-    /// Starts LibreHardwareMonitor minimized, ready to be queried a few seconds
+    /// Starts LibreHardwareMonitor hidden, ready to be queried a few seconds
     /// later. Returns whether a new process was created.
     fn launch(exe: &Path) -> bool {
         if !crate::is_elevated() {
@@ -345,12 +351,73 @@ mod imp {
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .spawn()
-            .is_ok();
-        if spawned {
-            tracing::info!("LibreHardwareMonitor iniciado para leer la temperatura de CPU");
+            .spawn();
+        match spawned {
+            Ok(child) => {
+                // `minTrayMenuItem=false` keeps the tray icon away, but the
+                // program then starts minimized in the taskbar. Hide that
+                // window too so only the Wexo overlay is visible.
+                hide_window_when_ready(child.id());
+                tracing::info!("LibreHardwareMonitor iniciado en segundo plano para leer la CPU");
+                true
+            }
+            Err(error) => {
+                tracing::warn!(%error, "no se pudo iniciar LibreHardwareMonitor");
+                false
+            }
         }
-        spawned
+    }
+
+    /// Hides LibreHardwareMonitor's top-level windows as soon as they exist.
+    ///
+    /// The program has no headless mode, so the window is created and then
+    /// hidden while its web server keeps sampling. A short retry loop covers
+    /// the time WinForms needs to create the form.
+    fn hide_window_when_ready(pid: u32) {
+        let spawned = std::thread::Builder::new()
+            .name("wexo-lhm-hide".to_string())
+            .spawn(move || {
+                for _ in 0..50 {
+                    if hide_process_windows(pid) {
+                        return;
+                    }
+                    std::thread::sleep(Duration::from_millis(100));
+                }
+                tracing::debug!("no se encontró la ventana de LibreHardwareMonitor para ocultarla");
+            });
+        if let Err(error) = spawned {
+            tracing::debug!(%error, "no se pudo lanzar el hilo que oculta LibreHardwareMonitor");
+        }
+    }
+
+    /// Hides every top-level window owned by `pid`. Returns whether any was
+    /// found, so the caller knows when to stop retrying.
+    fn hide_process_windows(pid: u32) -> bool {
+        struct Search {
+            pid: u32,
+            found: bool,
+        }
+
+        unsafe extern "system" fn callback(window: HWND, lparam: LPARAM) -> BOOL {
+            // SAFETY: `lparam` is the `&mut Search` passed to `EnumWindows`,
+            // which only lives for the duration of the call.
+            let search = unsafe { &mut *(lparam as *mut Search) };
+            let mut owner = 0u32;
+            // SAFETY: `window` is a valid handle supplied by the system.
+            unsafe { GetWindowThreadProcessId(window, &mut owner) };
+            if owner == search.pid {
+                // SAFETY: the handle belongs to the target process and hiding
+                // it does not invalidate anything we hold.
+                unsafe { ShowWindow(window, SW_HIDE) };
+                search.found = true;
+            }
+            1
+        }
+
+        let mut search = Search { pid, found: false };
+        // SAFETY: the callback and the pointer stay valid until it returns.
+        unsafe { EnumWindows(Some(callback), &mut search as *mut Search as LPARAM) };
+        search.found
     }
 
     fn process_running() -> bool {
@@ -779,6 +846,7 @@ lhm_cpu_temperature_celsius {"sensorName"="Core"} not-a-number
                 "listenerIp\" value=\"127.0.0.1",
                 "listenerPort\" value=\"8085",
                 "startMinMenuItem\" value=\"true",
+                "minTrayMenuItem\" value=\"false",
             ] {
                 assert!(merged.contains(key), "missing {key} in {merged}");
             }

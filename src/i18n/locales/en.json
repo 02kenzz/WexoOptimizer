@@ -270,7 +270,26 @@
     "resetDone": "Settings restored.",
     "restartAdmin": "Restart as administrator",
     "restartAdminHint": "Required to apply system optimizations.",
-    "adminAlready": "Already running with administrator permissions."
+    "adminAlready": "Already running with administrator permissions.",
+    "overlayConfigure": "Configure the overlay",
+    "overlayDialogTitle": "Performance overlay",
+    "overlayDialogHint": "Choose which metrics are shown, the layout, which corner the panel sits in and how opaque it is.",
+    "overlayMetrics": "Metrics",
+    "overlayShowFps": "Frames per second",
+    "overlayShowCpu": "CPU usage",
+    "overlayShowGpu": "GPU usage",
+    "overlayShowRam": "Memory usage",
+    "overlayShowNetwork": "Network (up and down)",
+    "overlayPosition": "Screen position",
+    "overlayPosTopLeft": "Top left",
+    "overlayPosTopRight": "Top right",
+    "overlayPosBottomLeft": "Bottom left",
+    "overlayPosBottomRight": "Bottom right",
+    "overlayOrientation": "Layout",
+    "overlayOrientationVertical": "Vertical",
+    "overlayOrientationHorizontal": "Horizontal",
+    "overlayOpacity": "Opacity",
+    "overlayClose": "Done"
   },
   "tools": {
     "cleanup": "Cleanup",
@@ -332,7 +351,8 @@
   },
   "overlay": {
     "live": "live",
-    "stale": "no data"
+    "stale": "no data",
+    "empty": "No metrics selected"
   },
   "insights": {
     "rules": {

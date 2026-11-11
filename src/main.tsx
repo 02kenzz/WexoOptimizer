@@ -8,6 +8,7 @@ import { queryClient } from "@/lib/queryClient";
 
 import "@/i18n";
 import "@/styles/globals.css";
+import "@/styles/overlay.css";
 
 const container = document.getElementById("root");
 if (!container) {

@@ -27,4 +27,8 @@ diskBusyPercent: number | null, networkRxBytesPerSec: number, networkTxBytesPerS
 /**
  * Frames per second of the foreground process.
  */
-fps: number | null, uptimeSeconds: number, };
+fps: number | null, 
+/**
+ * `1% low` of the same frames: the rate the slowest 1% allows.
+ */
+fpsLow1Percent: number | null, uptimeSeconds: number, };

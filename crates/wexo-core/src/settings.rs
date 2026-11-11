@@ -17,6 +17,10 @@ pub struct AppSettings {
     /// Shows the always-on-top performance overlay window.
     #[serde(default)]
     pub overlay_enabled: bool,
+    /// What the overlay shows and where it sits. Missing fields fall back to
+    /// the defaults, so settings files written by older versions still load.
+    #[serde(default)]
+    pub overlay: OverlaySettings,
     /// Custom data directory for snapshots and transaction log. None = use default.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data_dir: Option<String>,
@@ -32,6 +36,7 @@ impl Default for AppSettings {
             update_channel: UpdateChannel::Stable,
             telemetry_enabled: false,
             overlay_enabled: false,
+            overlay: OverlaySettings::default(),
             data_dir: None,
         }
     }
@@ -41,8 +46,72 @@ impl AppSettings {
     /// Keeps user-supplied values inside the ranges the monitor can actually honor.
     pub fn sanitize(mut self) -> Self {
         self.monitor_interval_ms = self.monitor_interval_ms.clamp(500, 10_000);
+        self.overlay = self.overlay.sanitize();
         self
     }
+}
+
+/// Which measurements the floating overlay shows, where it sits and how
+/// opaque it is. Every metric is on by default.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase", default)]
+#[ts(export, export_to = "../../../src/types/generated/")]
+pub struct OverlaySettings {
+    pub show_fps: bool,
+    pub show_cpu: bool,
+    pub show_gpu: bool,
+    pub show_ram: bool,
+    pub show_network: bool,
+    pub position: OverlayPosition,
+    /// Whether the blocks stack in a column or sit side by side.
+    pub orientation: OverlayOrientation,
+    /// Panel opacity, 0.35-1.0.
+    pub opacity: f32,
+}
+
+impl Default for OverlaySettings {
+    fn default() -> Self {
+        Self {
+            show_fps: true,
+            show_cpu: true,
+            show_gpu: true,
+            show_ram: true,
+            show_network: true,
+            position: OverlayPosition::TopRight,
+            orientation: OverlayOrientation::Vertical,
+            opacity: 0.92,
+        }
+    }
+}
+
+impl OverlaySettings {
+    /// Keeps the opacity readable: below 35% the panel stops being usable.
+    pub fn sanitize(mut self) -> Self {
+        self.opacity = self.opacity.clamp(0.35, 1.0);
+        self
+    }
+}
+
+/// Corner of the primary monitor the panel is anchored to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, TS)]
+#[serde(rename_all = "kebab-case")]
+#[ts(export, export_to = "../../../src/types/generated/")]
+pub enum OverlayPosition {
+    TopLeft,
+    #[default]
+    TopRight,
+    BottomLeft,
+    BottomRight,
+}
+
+/// Direction the overlay arranges its blocks in: a tall column or a wide row.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, TS)]
+#[serde(rename_all = "lowercase")]
+#[ts(export, export_to = "../../../src/types/generated/")]
+pub enum OverlayOrientation {
+    #[default]
+    Vertical,
+    Horizontal,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -104,5 +173,61 @@ mod tests {
             serde_json::to_string(&Theme::HighContrast).unwrap(),
             "\"high-contrast\""
         );
+    }
+
+    #[test]
+    fn overlay_defaults_show_every_metric_top_right() {
+        let overlay = OverlaySettings::default();
+        assert!(overlay.show_fps);
+        assert!(overlay.show_cpu);
+        assert!(overlay.show_gpu);
+        assert!(overlay.show_ram);
+        assert!(overlay.show_network);
+        assert_eq!(overlay.position, OverlayPosition::TopRight);
+        assert_eq!(overlay.orientation, OverlayOrientation::Vertical);
+        assert!((overlay.opacity - 0.92).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn overlay_fills_missing_fields_from_defaults() {
+        let overlay: OverlaySettings =
+            serde_json::from_str("{\"showNetwork\":false}").expect("parse");
+        assert!(!overlay.show_network);
+        assert!(overlay.show_fps);
+        assert_eq!(overlay.position, OverlayPosition::TopRight);
+        assert_eq!(overlay.orientation, OverlayOrientation::Vertical);
+    }
+
+    #[test]
+    fn overlay_orientation_serializes_lowercase() {
+        let json = serde_json::to_string(&OverlayOrientation::Horizontal).unwrap();
+        assert_eq!(json, "\"horizontal\"");
+    }
+
+    #[test]
+    fn overlay_position_serializes_kebab_case() {
+        let json = serde_json::to_string(&OverlayPosition::BottomLeft).unwrap();
+        assert_eq!(json, "\"bottom-left\"");
+    }
+
+    #[test]
+    fn sanitize_clamps_overlay_opacity() {
+        let faint = AppSettings {
+            overlay: OverlaySettings {
+                opacity: 0.05,
+                ..OverlaySettings::default()
+            },
+            ..AppSettings::default()
+        };
+        assert_eq!(faint.sanitize().overlay.opacity, 0.35);
+
+        let opaque = AppSettings {
+            overlay: OverlaySettings {
+                opacity: 4.0,
+                ..OverlaySettings::default()
+            },
+            ..AppSettings::default()
+        };
+        assert_eq!(opaque.sanitize().overlay.opacity, 1.0);
     }
 }
