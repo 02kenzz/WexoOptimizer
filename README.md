@@ -4,154 +4,154 @@
 
 # Wexo Optimizer
 
-**Diagnostica, optimiza y monitoriza tu PC. Sin promesas vacías.**
+**Diagnose, optimize and monitor your PC. No empty promises.**
 
-Cambios atómicos, verificados y reversibles en Windows 10/11 y Linux.
-Métricas reales del sistema, nunca valores inventados.
+Atomic, verified and reversible changes on Windows 10/11 and Linux.
+Real system metrics, never made-up values.
 
 <br />
 
-<a href="https://github.com/02kenzz/WexoOptimizer/releases/latest"><img alt="Última versión" src="https://img.shields.io/github/v/release/02kenzz/WexoOptimizer?style=flat-square&color=5C6BC0&label=release"></a>
+<a href="https://github.com/02kenzz/WexoOptimizer/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/02kenzz/WexoOptimizer?style=flat-square&color=5C6BC0&label=release"></a>
 <a href="https://github.com/02kenzz/WexoOptimizer/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/02kenzz/WexoOptimizer/ci.yml?branch=master&style=flat-square&label=CI"></a>
-<a href="LICENSE"><img alt="Licencia MIT" src="https://img.shields.io/github/license/02kenzz/WexoOptimizer?style=flat-square&color=5C6BC0"></a>
+<a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/github/license/02kenzz/WexoOptimizer?style=flat-square&color=5C6BC0"></a>
 <img alt="Windows 10/11" src="https://img.shields.io/badge/Windows-10%2F11-0078D6?style=flat-square&logo=windows&logoColor=white">
 <img alt="Linux" src="https://img.shields.io/badge/Linux-GNOME%20%C2%B7%20systemd-FCC624?style=flat-square&logo=linux&logoColor=black">
-<a href="https://github.com/02kenzz/WexoOptimizer/releases"><img alt="Descargas" src="https://img.shields.io/github/downloads/02kenzz/WexoOptimizer/total?style=flat-square&color=5C6BC0&label=descargas"></a>
+<a href="https://github.com/02kenzz/WexoOptimizer/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/02kenzz/WexoOptimizer/total?style=flat-square&color=5C6BC0&label=downloads"></a>
 
 <br />
 
-[Instalación](#instalación) ·
-[Capturas](#capturas) ·
-[Características](#características) ·
-[Compilar](#compilar-desde-el-código) ·
-[Arquitectura](#arquitectura) ·
+[Install](#install) ·
+[Screenshots](#screenshots) ·
+[Features](#features) ·
+[Build](#build-from-source) ·
+[Architecture](#architecture) ·
 [Changelog](CHANGELOG.md) ·
-[English](README.en.md)
+[Español](README.es.md)
 
 </div>
 
 ---
 
-<img src="docs/screenshots/dashboard.png" alt="Dashboard de Wexo Optimizer con la puntuación de salud del sistema, hardware detectado y acciones rápidas" width="100%" />
+<img src="docs/screenshots/dashboard.png" alt="Wexo Optimizer dashboard with system health score, detected hardware and quick actions" width="100%" />
 
 <div align="center">
-  <sub>Dashboard · salud del sistema, hardware real y acciones rápidas en una sola vista.</sub>
+  <sub>Dashboard · system health, real hardware and quick actions in one view.</sub>
 </div>
 
 ---
 
-## Qué es Wexo Optimizer
+## What it is
 
-Un centro de control de escritorio para saber **qué está pasando en tu equipo** y **cambiar solo lo que entiendes**, con la posibilidad de deshacerlo.
+A desktop control center to know **what is happening on your machine** and **change only what you understand**, with the option to undo it.
 
-- **Datos reales**: CPU, GPU, memoria, discos, red y temperaturas leídos del sistema. Si un sensor no existe, la interfaz muestra `—` o «Sin sensor»; nunca un número inventado.
-- **Cambios seguros**: cada optimización captura un snapshot, se aplica de forma atómica, se verifica y queda registrada en SQLite para revertirla con un clic.
-- **Bajo consumo**: el monitor usa buffers circulares e intervalos configurables, con el objetivo de mantenerse ligero en segundo plano.
-- **Bilingüe**: interfaz completa en español e inglés, con temas claro, oscuro, sistema y alto contraste.
+- **Real data**: CPU, GPU, memory, disks, network and temperatures read from the system. If a sensor does not exist, the UI shows `—` or “No sensor”; never a made-up number.
+- **Safe changes**: every optimization captures a snapshot, applies atomically, verifies the result and records it in SQLite so it can be reverted with one click.
+- **Low overhead**: the monitor uses circular buffers and configurable intervals, designed to stay light in the background.
+- **Bilingual**: full Spanish and English UI, with light, dark, system and high-contrast themes.
 
-> **Estado actual:** v0.3.0. Núcleo de diagnóstico, monitor, motor de optimizaciones, rollback, herramientas y overlay funcionando en Windows. En Linux están operativas la monitorización y las optimizaciones para GNOME/systemd.
+> **Current status:** v0.3.0. Diagnostics, monitor, optimization engine, rollback, tools and overlay working on Windows. On Linux, monitoring and GNOME/systemd optimizations are operational.
 
 ---
 
-## Capturas
+## Screenshots
 
 <table>
   <tr>
     <td width="50%" align="center" valign="top">
-      <a href="docs/screenshots/dashboard.png"><img src="docs/screenshots/dashboard.png" alt="Dashboard: puntuación de salud, hardware y recomendaciones" width="100%" /></a>
+      <a href="docs/screenshots/dashboard.png"><img src="docs/screenshots/dashboard.png" alt="Dashboard: health score, hardware and recommendations" width="100%" /></a>
       <br />
-      <sub><strong>Dashboard</strong><br />Salud del sistema, hardware detectado y recomendaciones priorizadas.</sub>
+      <sub><strong>Dashboard</strong><br />System health, detected hardware and prioritized recommendations.</sub>
     </td>
     <td width="50%" align="center" valign="top">
-      <a href="docs/screenshots/monitor.png"><img src="docs/screenshots/monitor.png" alt="Monitor: CPU, GPU, RAM, disco, red y temperaturas en tiempo real" width="100%" /></a>
+      <a href="docs/screenshots/monitor.png"><img src="docs/screenshots/monitor.png" alt="Monitor: CPU, GPU, RAM, disk, network and temperatures in real time" width="100%" /></a>
       <br />
-      <sub><strong>Monitor</strong><br />CPU total y por núcleo, GPU, RAM, disco, red y temperaturas en vivo.</sub>
+      <sub><strong>Monitor</strong><br />Total and per-core CPU, GPU, RAM, disk, network and live temperatures.</sub>
     </td>
   </tr>
 </table>
 
 ---
 
-## Características
+## Features
 
-### Diagnóstico
+### Diagnostics
 
-- Perfil de hardware: CPU, módulos de RAM, canales y velocidad, GPU, discos con estado SMART, sistema operativo y uptime.
-- Puntuación de salud global y por subsistema, con hallazgos priorizados.
-- Detección de cuellos de botella con evidencia medible (CPU p50/p95, presión de memoria, saturación de disco, red) y nivel de confianza.
-- Reglas dinámicas que solo se activan cuando hay muestras suficientes del monitor: sin datos, no hay conclusiones.
+- Hardware profile: CPU, RAM modules, channels and speed, GPU, disks with SMART status, OS and uptime.
+- Global and per-subsystem health score with prioritized findings.
+- Bottleneck detection backed by measurable evidence (CPU p50/p95, memory pressure, disk saturation, network) and a confidence level.
+- Dynamic rules only fire when enough monitor samples exist: no data, no conclusions.
 
-### Optimizaciones
+### Optimizations
 
-- **Windows:** SysMain, telemetría DiagTrack, plan de energía de alto rendimiento, autotuning de TCP, HAGS, efectos visuales y último acceso NTFS.
-- **Linux:** animaciones de GNOME, Bluetooth y `vm.swappiness`.
-- Vista previa (*dry run*) antes de tocar nada, validación de requisitos, conflictos y permisos de administrador.
-- Aplicación atómica con snapshot, verificación posterior y rollback automático si algo falla.
-- Historial de transacciones con hash para volver al estado exacto anterior.
+- **Windows:** SysMain, DiagTrack telemetry, high-performance power plan, TCP autotuning, HAGS, visual effects and NTFS last access.
+- **Linux:** GNOME animations, Bluetooth and `vm.swappiness`.
+- Dry run before touching anything, with requirement, conflict and administrator checks.
+- Atomic apply with snapshot, post-apply verification and automatic rollback if anything fails.
+- Transaction history with hashes to return to the exact previous state.
 
 ### Monitor
 
-- CPU total y por núcleo, memoria, disco, red, uptime y gráficas históricas en vivo.
-- Temperatura de GPU vía NVML y de CPU con cadena de respaldo: zonas ACPI → LibreHardwareMonitor → sin sensor.
-- Muestreo configurable, buffers circulares y objetivo de diseño de bajo impacto en reposo.
-- Indicadores térmicos y de carga con umbrales claros.
+- Total and per-core CPU, memory, disk, network, uptime and live historical charts.
+- GPU temperature via NVML and CPU temperature with a fallback chain: ACPI zones → LibreHardwareMonitor → no sensor.
+- Configurable sampling, circular buffers and a low-idle-impact design target.
+- Thermal and load indicators with clear thresholds.
 
-### Herramientas
+### Tools
 
-- Limpieza con vista previa: temporales, logs y cachés; los archivos en uso se omiten y se informa de lo liberado.
-- Reparación del sistema: SFC y DISM.
-- Mantenimiento de disco: desfragmentación, TRIM para SSD y CHKDSK.
-- Consola en vivo para cada tarea, con duración, código de salida y opción de detener.
-- Mantenimiento de la base de datos interna: *vacuum* y reindexado.
+- Preview-first cleanup: temp files, logs and caches; files in use are skipped and freed space is reported.
+- System repair: SFC and DISM.
+- Disk maintenance: defragmentation, SSD TRIM and CHKDSK.
+- Live console for every job, with elapsed time, exit code and a stop button.
+- Internal database maintenance: vacuum and reindex.
 
-### Overlay de rendimiento
+### Performance overlay
 
-- Panel flotante con FPS, CPU, GPU y RAM sobre el juego.
-- *Click-through*, siempre visible y fuera de la barra de tareas.
-- FPS contados desde eventos *present* de ETW: sin inyección en el juego. Requiere permisos de administrador y modo ventana o sin bordes.
+- Floating panel with FPS, CPU, GPU and RAM on top of the game.
+- Click-through, always on top and out of the taskbar.
+- FPS counted from ETW present events: nothing is injected into the game. Requires administrator rights and windowed or borderless mode.
 
-### Seguridad y privacidad
+### Safety and privacy
 
-- Snapshot y transacción antes de cada cambio; rollback en un clic desde el historial.
-- Verificación del estado final y registro auditable en SQLite.
-- **Sin telemetría por defecto**: no se envía nada sin consentimiento.
-- La app se autoeleva al arrancar; si rechazas el aviso UAC, sigue abriéndose y las acciones que requieren administrador quedan desactivadas.
+- Snapshot and transaction before every change; one-click rollback from history.
+- Final-state verification and an auditable SQLite log.
+- **No telemetry by default**: nothing is sent without consent.
+- The app elevates itself on launch; if you decline UAC it still opens, but administrator-only actions stay disabled.
 
 ---
 
-## Instalación
+## Install
 
 ### Windows 10/11
 
-1. Descarga el instalador NSIS desde **[Releases](https://github.com/02kenzz/WexoOptimizer/releases/latest)**.
-2. Ejecuta `Wexo.Optimizer_x.y.z_x64-setup.exe` y sigue el asistente.
-3. Acepta el aviso de UAC para habilitar las optimizaciones del sistema.
+1. Download the NSIS installer from **[Releases](https://github.com/02kenzz/WexoOptimizer/releases/latest)**.
+2. Run `Wexo.Optimizer_x.y.z_x64-setup.exe` and follow the wizard.
+3. Accept the UAC prompt to enable system optimizations.
 
-> **Aviso de SmartScreen:** el instalador no está firmado (proyecto open source sin presupuesto para certificado). Si aparece «Windows protegió tu PC», pulsa *Más información → Ejecutar de todas formas*. [Motivos y plan de firma](docs/CODE_SIGNING.md).
+> **SmartScreen warning:** the installer is unsigned (open source project without a certificate budget). If “Windows protected your PC” appears, click *More info → Run anyway*. [Why and signing plan](docs/CODE_SIGNING.md).
 
-> **Temperatura de CPU:** algunas placas de escritorio no exponen zonas térmicas ACPI. En ese caso el Monitor lee el sensor del paquete desde [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor). Si está instalado, la app lo inicia minimizado y configura su servidor web local; necesita los mismos permisos de administrador. Sin él, la tarjeta muestra `—` en lugar de un valor inventado.
+> **CPU temperature:** some desktop boards do not expose ACPI thermal zones. In that case the Monitor reads the package sensor from [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor). When installed, the app starts it minimized and configures its local web server; it needs the same administrator rights. Without it, the tile shows `—` instead of a made-up value.
 
-> **Sin elevación:** inicia la app con `--no-elevate` para omitir el aviso de UAC a propósito.
+> **No elevation:** launch the app with `--no-elevate` to skip the UAC prompt deliberately.
 
 ### Linux
 
-La app se ejecuta en GNOME con systemd. Para los cambios que requieren root se relanza mediante `pkexec`; los snapshots conservan el estado de las unidades de systemd y de cada archivo tocado, incluidos los creados por la optimización, que el rollback elimina.
+The app runs on GNOME with systemd. Changes that need root relaunch through `pkexec`; snapshots keep systemd unit states and every file they touch, including files created by the tweak, which rollback removes.
 
 ---
 
-## Compilar desde el código
+## Build from source
 
-**Requisitos:** Node.js 20+, Rust estable y las dependencias de Tauri v2.
+**Requirements:** Node.js 20+, stable Rust and the Tauri v2 dependencies.
 
 ### Windows
 
 ```powershell
-# Requiere MSVC y Visual Studio Build Tools (C++ Desktop)
+# Requires MSVC and Visual Studio Build Tools (C++ Desktop)
 git clone https://github.com/02kenzz/WexoOptimizer
 cd WexoOptimizer
 npm install
-npm run tauri dev      # App de escritorio con backend Rust
-npm run tauri build    # Instaladores NSIS + MSI
+npm run tauri dev      # Desktop app with Rust backend
+npm run tauri build    # NSIS + MSI installers
 ```
 
 ### Linux
@@ -163,66 +163,66 @@ npm install
 npm run tauri dev
 ```
 
-### Solo frontend
+### Frontend only
 
 ```bash
-npm run dev            # Vite con datos simulados, sin backend
+npm run dev            # Vite with mocked data, no backend
 ```
 
 ---
 
-## Arquitectura
+## Architecture
 
 ```text
-crates/wexo-core        Tipos de dominio puros y contratos (sin dependencias de SO)
-crates/wexo-sysinfo     Colectores de hardware/SO (sysinfo; WMI/PDH, /sys, NVML, LHM)
-crates/wexo-optimizer   Registro de optimizaciones + motor apply/verify/rollback
-crates/wexo-safety      Preflight, snapshots de registro/archivos/systemd, log SQLite
-crates/wexo-rules       Motor de reglas → recomendaciones y cuellos de botella
-crates/wexo-monitor     Muestreo de métricas, buffers circulares y detección
-crates/wexo-tools       Limpieza, jobs SFC/DISM/defrag/TRIM/CHKDSK y SQLite
-src-tauri               Shell Tauri v2, comandos IPC, estado, elevación y logs
+crates/wexo-core        Pure domain types and contracts (no OS dependencies)
+crates/wexo-sysinfo     Hardware/OS collectors (sysinfo; WMI/PDH, /sys, NVML, LHM)
+crates/wexo-optimizer   Optimization registry + apply/verify/rollback engine
+crates/wexo-safety      Preflight, registry/file/systemd snapshots, SQLite log
+crates/wexo-rules       Rules engine → recommendations and bottlenecks
+crates/wexo-monitor     Metrics sampling, circular buffers and detection
+crates/wexo-tools       Cleanup, SFC/DISM/defrag/TRIM/CHKDSK jobs and SQLite
+src-tauri               Tauri v2 shell, IPC commands, state, elevation and logs
 src/                    React 18 + TypeScript + Vite + Tailwind CSS 4
 ```
 
-**Stack:** Tauri v2 · Rust workspace · React 18 · TypeScript · Tailwind CSS 4 · Zustand · TanStack Query · `ts-rs` para IPC tipado · uPlot · i18next · Vitest · `cargo test`
+**Stack:** Tauri v2 · Rust workspace · React 18 · TypeScript · Tailwind CSS 4 · Zustand · TanStack Query · `ts-rs` typed IPC · uPlot · i18next · Vitest · `cargo test`
 
 ---
 
-## Firma de código
+## Code signing
 
-Proyecto open source, sin presupuesto para un certificado EV.
+Open source project without an EV certificate budget.
 
-| Opción | Estado |
+| Option | Status |
 | --- | --- |
-| **Sin firmar (actual)** | Funciona, muestra el aviso de SmartScreen |
-| **SignPath.io** | Gratis para FOSS — planificado |
-| **Autofirmado** | Solo para pruebas internas |
+| **Unsigned (current)** | Works, shows the SmartScreen warning |
+| **SignPath.io** | Free for FOSS — planned |
+| **Self-signed** | Internal testing only |
 
-[Detalles →](docs/CODE_SIGNING.md)
+[Details →](docs/CODE_SIGNING.md)
 
 ---
 
 ## Releases
 
-| Canal | Enlace |
+| Channel | Link |
 | --- | --- |
-| **Estable** | [Última versión](https://github.com/02kenzz/WexoOptimizer/releases/latest) |
-| **Todas las versiones** | [Releases](https://github.com/02kenzz/WexoOptimizer/releases) |
-| **Cambios** | [CHANGELOG.md](CHANGELOG.md) |
+| **Stable** | [Latest release](https://github.com/02kenzz/WexoOptimizer/releases/latest) |
+| **All versions** | [Releases](https://github.com/02kenzz/WexoOptimizer/releases) |
+| **Changes** | [CHANGELOG.md](CHANGELOG.md) |
 
-El flujo de publicación se dispara al subir un tag `v*`: GitHub Actions compila, genera el instalador NSIS y crea el release con el binario adjunto.
+The release flow starts when a `v*` tag is pushed: GitHub Actions builds the app, generates the NSIS installer and creates the release with the binary attached.
 
 ---
 
-## Enlaces
+## Links
 
-- **Firma de código** → [docs/CODE_SIGNING.md](docs/CODE_SIGNING.md)
+- **Code signing** → [docs/CODE_SIGNING.md](docs/CODE_SIGNING.md)
 - **Issues** → [GitHub Issues](https://github.com/02kenzz/WexoOptimizer/issues)
-- **Discusiones** → [GitHub Discussions](https://github.com/02kenzz/WexoOptimizer/discussions)
+- **Discussions** → [GitHub Discussions](https://github.com/02kenzz/WexoOptimizer/discussions)
 
 ---
 
-## Licencia
+## License
 
 MIT © 2026 [02kenzz](https://github.com/02kenzz)
