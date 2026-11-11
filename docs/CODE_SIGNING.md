@@ -45,7 +45,7 @@ Then in GitHub Actions secrets:
 
 ```powershell
 # Check if installer is signed
-Get-AuthenticodeSignature "Wexo.Optimizer_0.1.0_x64-setup.exe" | Format-List
+Get-AuthenticodeSignature "Wexo.Optimizer_x.y.z_x64-setup.exe" | Format-List
 ```
 
 ---
