@@ -11,6 +11,6 @@ describe("Badge", () => {
 
   it("applies the tone classes", () => {
     render(<Badge tone="danger">Critical</Badge>);
-    expect(screen.getByText("Critical").className).toContain("text-danger");
+    expect(screen.getByText("Critical").className).toContain("chip-danger");
   });
 });
