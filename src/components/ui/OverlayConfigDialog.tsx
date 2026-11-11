@@ -39,8 +39,8 @@ const ORIENTATIONS: {
   icon: typeof Rows3;
   labelKey: string;
 }[] = [
-  { value: "vertical", icon: Rows3, labelKey: "settings.overlayOrientationVertical" },
   { value: "horizontal", icon: Columns3, labelKey: "settings.overlayOrientationHorizontal" },
+  { value: "vertical", icon: Rows3, labelKey: "settings.overlayOrientationVertical" },
 ];
 
 export function OverlayConfigDialog({
@@ -145,6 +145,17 @@ export function OverlayConfigDialog({
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          <div className="ovdlg-section">
+            <h4>{t("settings.overlayShortcut")}</h4>
+            <div className="row">
+              <div className="row-label">
+                <b>{t("settings.overlayShortcutToggle")}</b>
+                <span>{t("settings.overlayShortcutHint")}</span>
+              </div>
+              <kbd className="ovkey">Alt + R</kbd>
             </div>
           </div>
 

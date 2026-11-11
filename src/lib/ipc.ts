@@ -99,7 +99,7 @@ const defaultSettings: AppSettings = {
     showRam: true,
     showNetwork: true,
     position: "top-right",
-    orientation: "vertical",
+    orientation: "horizontal",
     opacity: 0.92,
   },
   dataDir: null,

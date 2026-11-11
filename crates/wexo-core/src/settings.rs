@@ -78,7 +78,7 @@ impl Default for OverlaySettings {
             show_ram: true,
             show_network: true,
             position: OverlayPosition::TopRight,
-            orientation: OverlayOrientation::Vertical,
+            orientation: OverlayOrientation::Horizontal,
             opacity: 0.92,
         }
     }
@@ -109,8 +109,8 @@ pub enum OverlayPosition {
 #[serde(rename_all = "lowercase")]
 #[ts(export, export_to = "../../../src/types/generated/")]
 pub enum OverlayOrientation {
-    #[default]
     Vertical,
+    #[default]
     Horizontal,
 }
 
@@ -184,7 +184,7 @@ mod tests {
         assert!(overlay.show_ram);
         assert!(overlay.show_network);
         assert_eq!(overlay.position, OverlayPosition::TopRight);
-        assert_eq!(overlay.orientation, OverlayOrientation::Vertical);
+        assert_eq!(overlay.orientation, OverlayOrientation::Horizontal);
         assert!((overlay.opacity - 0.92).abs() < f32::EPSILON);
     }
 
@@ -195,7 +195,7 @@ mod tests {
         assert!(!overlay.show_network);
         assert!(overlay.show_fps);
         assert_eq!(overlay.position, OverlayPosition::TopRight);
-        assert_eq!(overlay.orientation, OverlayOrientation::Vertical);
+        assert_eq!(overlay.orientation, OverlayOrientation::Horizontal);
     }
 
     #[test]

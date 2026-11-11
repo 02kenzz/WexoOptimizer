@@ -13,12 +13,18 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     LogicalSize, Manager, Runtime, Size, WebviewWindow, WindowEvent,
 };
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 /// Preferred and minimum main-window size, in logical pixels.
 const IDEAL_WIDTH: f64 = 1320.0;
 const IDEAL_HEIGHT: f64 = 860.0;
 const MIN_WIDTH: f64 = 900.0;
 const MIN_HEIGHT: f64 = 620.0;
+
+/// Global hotkey that shows or hides the overlay while the feature is on.
+fn overlay_shortcut() -> Shortcut {
+    Shortcut::new(Some(Modifiers::ALT), Code::KeyR)
+}
 
 /// Boots the Tauri application.
 pub fn run() {
@@ -45,10 +51,24 @@ pub fn run() {
     let state = AppState::new(paths, settings, log_guard);
 
     let app = tauri::Builder::default()
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, shortcut, event| {
+                    if event.state() == ShortcutState::Pressed && shortcut == &overlay_shortcut() {
+                        toggle_overlay(app);
+                    }
+                })
+                .build(),
+        )
         .manage(state)
         .setup(|app| {
             // Start monitor
             app.state::<AppState>().start_monitor(app.handle().clone());
+
+            // Alt+R shows or hides the overlay while it is enabled.
+            if let Err(error) = app.global_shortcut().register(overlay_shortcut()) {
+                tracing::warn!(%error, "no se pudo registrar el atajo Alt+R del overlay");
+            }
 
             // Create system tray
             create_tray(app.handle().clone())?;
@@ -114,6 +134,27 @@ pub fn run() {
             handle.state::<AppState>().stop_monitor();
         }
     });
+}
+
+/// Shows the overlay when it is hidden and hides it when visible.
+///
+/// The hotkey is a quick toggle: it never changes the saved `overlayEnabled`
+/// preference, so the panel comes back on the next launch if it is still on.
+fn toggle_overlay(app: &tauri::AppHandle) {
+    if !app.state::<AppState>().settings_snapshot().overlay_enabled {
+        return;
+    }
+
+    let visible = app
+        .get_webview_window(overlay::LABEL)
+        .and_then(|window| window.is_visible().ok())
+        .unwrap_or(false);
+
+    if visible {
+        overlay::hide(app);
+    } else {
+        overlay::apply(app, true);
+    }
 }
 
 /// Fits the main window to the monitor it opens on, leaving room for the
