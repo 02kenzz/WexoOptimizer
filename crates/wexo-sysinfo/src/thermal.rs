@@ -5,7 +5,8 @@
 //!
 //! * CPU: the ACPI thermal zone performance counters. Many desktops do not
 //!   publish a zone; those fall back to LibreHardwareMonitor's web server,
-//!   which is started hidden when it is installed and we are elevated.
+//!   which is started on a private desktop (no window, no tray icon) when it
+//!   is installed and we are elevated.
 //! * GPU: NVML, the library installed with the NVIDIA driver.
 //!
 //! Nothing is estimated here: a missing sensor is not a zero.
@@ -209,11 +210,19 @@ mod imp {
     use std::ptr;
     use std::time::Duration;
 
-    use windows_sys::Win32::Foundation::{FreeLibrary, FARPROC, HMODULE, BOOL, HWND, LPARAM};
+    use windows_sys::Win32::Foundation::{
+        CloseHandle, FreeLibrary, FARPROC, GENERIC_ALL, HMODULE, BOOL, HWND, LPARAM,
+    };
     use windows_sys::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW};
     use windows_sys::Win32::System::Performance::{
         PdhAddEnglishCounterW, PdhCloseQuery, PdhCollectQueryData, PdhGetFormattedCounterArrayW,
         PdhOpenQueryW, PDH_FMT_COUNTERVALUE_ITEM_W, PDH_FMT_DOUBLE, PDH_MORE_DATA,
+    };
+    use windows_sys::Win32::System::StationsAndDesktops::{
+        CloseDesktop, CreateDesktopW, OpenDesktopW,
+    };
+    use windows_sys::Win32::System::Threading::{
+        CreateProcessW, PROCESS_INFORMATION, STARTF_USESHOWWINDOW, STARTUPINFOW,
     };
     use windows_sys::Win32::UI::WindowsAndMessaging::{
         EnumWindows, GetWindowThreadProcessId, ShowWindow, SW_HIDE,
@@ -223,6 +232,9 @@ mod imp {
 
     const THERMAL_ZONE: &str = r"\Thermal Zone Information(*)\High Precision Temperature";
     const LHM_EXE: &str = "LibreHardwareMonitor.exe";
+    /// Private desktop where LibreHardwareMonitor's windows are created. It is
+    /// never made visible, so the program has no on-screen presence at all.
+    const LHM_DESKTOP: &str = "WexoHidden";
     /// Package folder WinGet uses for the portable build, relative to
     /// `%LOCALAPPDATA%`.
     const LHM_WINGET_PACKAGE: &str = concat!(
@@ -327,8 +339,8 @@ mod imp {
             .find(|candidate| candidate.is_file())
     }
 
-    /// Starts LibreHardwareMonitor hidden, ready to be queried a few seconds
-    /// later. Returns whether a new process was created.
+    /// Starts LibreHardwareMonitor out of sight, ready to be queried a few
+    /// seconds later. Returns whether a new process was created.
     fn launch(exe: &Path) -> bool {
         if !crate::is_elevated() {
             tracing::debug!(
@@ -336,7 +348,10 @@ mod imp {
             );
             return false;
         }
-        if process_running() {
+        if let Some(pid) = process_running() {
+            // The program was already open (usually by the user). Keep it out
+            // of sight as well, but do not start a second copy.
+            hide_process_windows(pid);
             tracing::debug!(
                 "temperatura de CPU: LibreHardwareMonitor está abierto sin el servidor web"
             );
@@ -347,18 +362,9 @@ mod imp {
         if !ensure_config(&exe) {
             return false;
         }
-        let spawned = Command::new(&exe)
-            .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .spawn();
-        match spawned {
-            Ok(child) => {
-                // `minTrayMenuItem=false` keeps the tray icon away, but the
-                // program then starts minimized in the taskbar. Hide that
-                // window too so only the Wexo overlay is visible.
-                hide_window_when_ready(child.id());
-                tracing::info!("LibreHardwareMonitor iniciado en segundo plano para leer la CPU");
+        match spawn_hidden(&exe) {
+            Ok(()) => {
+                tracing::info!("LibreHardwareMonitor iniciado oculto para leer la CPU");
                 true
             }
             Err(error) => {
@@ -366,6 +372,104 @@ mod imp {
                 false
             }
         }
+    }
+
+    /// Starts the program with its windows on a private desktop, so it never
+    /// appears on screen, in the taskbar or in the notification area. If that
+    /// desktop cannot be created it falls back to a normal start followed by
+    /// hiding the window.
+    fn spawn_hidden(exe: &Path) -> std::io::Result<()> {
+        match spawn_on_private_desktop(exe) {
+            Ok(()) => Ok(()),
+            Err(error) => {
+                tracing::debug!(
+                    %error,
+                    "no se pudo usar un escritorio oculto; se ocultará la ventana"
+                );
+                let child = Command::new(exe)
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null())
+                    .spawn()?;
+                // `minTrayMenuItem=false` keeps the tray icon away, but the
+                // program then starts minimized in the taskbar. Hide that
+                // window too so only the Wexo overlay is visible.
+                hide_window_when_ready(child.id());
+                Ok(())
+            }
+        }
+    }
+
+    /// Runs the program on a desktop that is never switched to, which is the
+    /// only reliable way to keep a WinForms window (and its taskbar button)
+    /// from showing. Sensor access and the local web server keep working.
+    fn spawn_on_private_desktop(exe: &Path) -> std::io::Result<()> {
+        let desktop_name = wide(LHM_DESKTOP);
+        // SAFETY: `desktop_name` is NUL-terminated and lives for the whole
+        // call; the optional arguments are null, which means "default".
+        let mut desktop = unsafe {
+            CreateDesktopW(
+                desktop_name.as_ptr(),
+                ptr::null(),
+                ptr::null(),
+                0,
+                GENERIC_ALL,
+                ptr::null(),
+            )
+        };
+        if desktop.is_null() {
+            // A desktop left behind by a crashed copy can be reopened.
+            // SAFETY: same buffer and defaults as above; no inheritance.
+            desktop = unsafe { OpenDesktopW(desktop_name.as_ptr(), 0, 0, GENERIC_ALL) };
+        }
+        if desktop.is_null() {
+            return Err(std::io::Error::last_os_error());
+        }
+
+        let application = wide(&exe.to_string_lossy());
+        let mut command_line = wide(&format!("\"{}\"", exe.display()));
+        // SAFETY: a zeroed STARTUPINFOW is valid once `cb` is set.
+        let mut startup: STARTUPINFOW = unsafe { std::mem::zeroed() };
+        startup.cb = std::mem::size_of::<STARTUPINFOW>() as u32;
+        startup.dwFlags = STARTF_USESHOWWINDOW;
+        startup.wShowWindow = SW_HIDE as u16;
+        startup.lpDesktop = desktop_name.as_ptr() as *mut u16;
+        // SAFETY: zeroed PROCESS_INFORMATION is a valid output buffer.
+        let mut process: PROCESS_INFORMATION = unsafe { std::mem::zeroed() };
+
+        // SAFETY: every pointer refers to a live, NUL-terminated buffer for
+        // the duration of the call, and `process` is only written by the API.
+        let created = unsafe {
+            CreateProcessW(
+                application.as_ptr(),
+                command_line.as_mut_ptr(),
+                ptr::null(),
+                ptr::null(),
+                0,
+                0,
+                ptr::null(),
+                ptr::null(),
+                &startup,
+                &mut process,
+            )
+        };
+        if created == 0 {
+            let error = std::io::Error::last_os_error();
+            // SAFETY: the handle came from CreateDesktopW/OpenDesktopW.
+            unsafe { CloseDesktop(desktop) };
+            return Err(error);
+        }
+
+        // SAFETY: both handles were created by CreateProcessW and are no
+        // longer needed; the process keeps running without them.
+        unsafe {
+            CloseHandle(process.hThread);
+            CloseHandle(process.hProcess);
+        }
+        // The desktop handle is deliberately left open: it is a single handle
+        // per app run and guarantees the private desktop outlives startup.
+        tracing::debug!(pid = process.dwProcessId, "LibreHardwareMonitor en escritorio oculto");
+        Ok(())
     }
 
     /// Hides LibreHardwareMonitor's top-level windows as soon as they exist.
@@ -420,14 +524,14 @@ mod imp {
         search.found
     }
 
-    fn process_running() -> bool {
+    /// PID of a running LibreHardwareMonitor, if there is one.
+    fn process_running() -> Option<u32> {
         let mut system = sysinfo::System::new();
         system.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
-        let running = system
+        let process = system
             .processes_by_name(OsStr::new("LibreHardwareMonitor"))
-            .next()
-            .is_some();
-        running
+            .next();
+        process.map(|process| process.pid().as_u32())
     }
 
     /// Settings file LibreHardwareMonitor reads: its executable path with a

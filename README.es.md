@@ -129,7 +129,7 @@ Un centro de control de escritorio para saber **qué está pasando en tu equipo*
 
 > **Aviso de SmartScreen:** el instalador no está firmado (proyecto open source sin presupuesto para certificado). Si aparece «Windows protegió tu PC», pulsa *Más información → Ejecutar de todas formas*. [Motivos y plan de firma](docs/CODE_SIGNING.md).
 
-> **Temperatura de CPU:** algunas placas de escritorio no exponen zonas térmicas ACPI. En ese caso el Monitor lee el sensor del paquete desde [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor). Si está instalado, la app lo inicia minimizado y configura su servidor web local; necesita los mismos permisos de administrador. Sin él, la tarjeta muestra `—` en lugar de un valor inventado.
+> **Temperatura de CPU:** algunas placas de escritorio no exponen zonas térmicas ACPI. En ese caso el Monitor lee el sensor del paquete desde [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor). Si está instalado, la app lo inicia en un escritorio oculto y configura su servidor web local, así que no muestra ventana, botón en la barra de tareas ni icono en la bandeja; necesita los mismos permisos de administrador. Sin él, la tarjeta muestra `—` en lugar de un valor inventado.
 
 > **Sin elevación:** inicia la app con `--no-elevate` para omitir el aviso de UAC a propósito.
 

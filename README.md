@@ -129,7 +129,7 @@ A desktop control center to know **what is happening on your machine** and **cha
 
 > **SmartScreen warning:** the installer is unsigned (open source project without a certificate budget). If “Windows protected your PC” appears, click *More info → Run anyway*. [Why and signing plan](docs/CODE_SIGNING.md).
 
-> **CPU temperature:** some desktop boards do not expose ACPI thermal zones. In that case the Monitor reads the package sensor from [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor). When installed, the app starts it minimized and configures its local web server; it needs the same administrator rights. Without it, the tile shows `—` instead of a made-up value.
+> **CPU temperature:** some desktop boards do not expose ACPI thermal zones. In that case the Monitor reads the package sensor from [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor). When installed, the app starts it on a hidden desktop and configures its local web server, so it has no window, taskbar button or tray icon; it needs the same administrator rights. Without it, the tile shows `—` instead of a made-up value.
 
 > **No elevation:** launch the app with `--no-elevate` to skip the UAC prompt deliberately.
 
