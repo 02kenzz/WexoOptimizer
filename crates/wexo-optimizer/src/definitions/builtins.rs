@@ -1,5 +1,7 @@
 //! Built-in optimization definitions.
 
+use std::fs;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use winreg::enums::*;
 use winreg::{RegKey, HKEY};
@@ -455,6 +457,289 @@ pub fn ntfs_last_access() -> OptimizationDef {
             Ok(())
         })
         .build()
+}
+
+/// Creates the "clean-shader-cache" optimization.
+pub fn clean_shader_cache() -> OptimizationDef {
+    let meta = Optimization {
+        id: "clean-shader-cache".to_string(),
+        category: Category::FileSystem,
+        title: "Limpieza de caché de sombreadores".to_string(),
+        description: "Elimina los archivos compilados antiguos de DirectX y de los controladores gráficos (NVIDIA, AMD e Intel).".to_string(),
+        rationale: "Las cachés de sombreadores se regeneran solas. Borrarlas libera espacio y elimina entradas corruptas que provocan tirones; el primer inicio de un juego puede tardar unos segundos más mientras recompila.".to_string(),
+        risk: RiskLevel::VeryLow,
+        requires_reboot: false,
+        applies_to: Applicability {
+            os_min_build: Some("19044".to_string()),
+            hardware_filters: vec![],
+            conflicts_with: vec![],
+        },
+        snapshot: SnapshotSpec {
+            registry_keys: vec![],
+            services: vec![],
+            files: vec![],
+        },
+        available: false,
+        requires_admin: false,
+    };
+
+    OptimizationDef::builder(meta)
+        .apply(|| {
+            let mut freed = 0u64;
+            let mut removed = 0usize;
+            let mut found = 0usize;
+
+            for dir in shader_cache_dirs() {
+                if !dir.is_dir() {
+                    continue;
+                }
+                found += 1;
+                let (bytes, files) = clear_directory(&dir);
+                freed += bytes;
+                removed += files;
+            }
+
+            if found == 0 {
+                return Ok("No se encontraron cachés de sombreadores en este equipo".to_string());
+            }
+
+            Ok(format!(
+                "Caché de sombreadores limpiada: {} liberados ({} archivos)",
+                format_size(freed),
+                removed
+            ))
+        })
+        // Deletion is best effort: files in use by a running game stay and are
+        // simply skipped, so the tweak counts as applied once it has run.
+        .verify(|| Ok(VerificationResult::Verified))
+        .rollback(|| Ok(()))
+        .build()
+}
+
+/// Creates the "disable-cloud-clipboard" optimization.
+pub fn disable_cloud_clipboard() -> OptimizationDef {
+    let meta = Optimization {
+        id: "disable-cloud-clipboard".to_string(),
+        category: Category::Privacy,
+        title: "Desactivar Portapapeles en la nube y su sincronización".to_string(),
+        description: "Impide que Windows envíe a los servidores de Microsoft lo que copias con CTRL+C y desactiva la sincronización entre dispositivos.".to_string(),
+        rationale: "Solo afecta a quien copia y pega entre varios equipos con la misma cuenta de Microsoft. El portapapeles local sigue funcionando con normalidad.".to_string(),
+        risk: RiskLevel::Low,
+        requires_reboot: false,
+        applies_to: Applicability {
+            os_min_build: Some("19044".to_string()),
+            hardware_filters: vec![],
+            conflicts_with: vec![],
+        },
+        snapshot: SnapshotSpec {
+            registry_keys: vec![
+                "HKCU\\Software\\Microsoft\\Clipboard".to_string(),
+                "HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows\\System".to_string(),
+            ],
+            services: vec![],
+            files: vec![],
+        },
+        available: false,
+        requires_admin: true,
+    };
+
+    OptimizationDef::builder(meta)
+        .apply(|| {
+            set_registry_value(
+                winreg::enums::HKEY_CURRENT_USER,
+                "Software\\Microsoft\\Clipboard",
+                "EnableCloudClipboard",
+                winreg::enums::RegType::REG_DWORD as u32,
+                &0u32.to_le_bytes(),
+            )?;
+            set_registry_value(
+                winreg::enums::HKEY_CURRENT_USER,
+                "Software\\Microsoft\\Clipboard",
+                "CloudClipboardAutomaticUpload",
+                winreg::enums::RegType::REG_DWORD as u32,
+                &0u32.to_le_bytes(),
+            )?;
+            // Machine-wide policy that also blocks the cross-device history.
+            set_registry_value(
+                winreg::enums::HKEY_LOCAL_MACHINE,
+                "SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+                "AllowCrossDeviceClipboard",
+                winreg::enums::RegType::REG_DWORD as u32,
+                &0u32.to_le_bytes(),
+            )?;
+            Ok("Portapapeles en la nube y sincronización entre dispositivos desactivados".to_string())
+        })
+        .verify(|| {
+            let hkcu = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
+            let key = hkcu
+                .open_subkey_with_flags("Software\\Microsoft\\Clipboard", KEY_READ)
+                .map_err(|e| e.to_string())?;
+            let cloud: u32 = key.get_value("EnableCloudClipboard").unwrap_or(1);
+            let upload: u32 = key.get_value("CloudClipboardAutomaticUpload").unwrap_or(1);
+            if cloud == 0 && upload == 0 {
+                Ok(VerificationResult::Verified)
+            } else {
+                Ok(VerificationResult::NotApplied)
+            }
+        })
+        .rollback(|| {
+            // The snapshot restores any value that already existed; this only
+            // removes the ones the tweak may have created.
+            let hkcu = RegKey::predef(winreg::enums::HKEY_CURRENT_USER);
+            if let Ok(key) =
+                hkcu.open_subkey_with_flags("Software\\Microsoft\\Clipboard", KEY_ALL_ACCESS)
+            {
+                let _ = key.delete_value("EnableCloudClipboard");
+                let _ = key.delete_value("CloudClipboardAutomaticUpload");
+            }
+            let hklm = RegKey::predef(winreg::enums::HKEY_LOCAL_MACHINE);
+            if let Ok(key) = hklm.open_subkey_with_flags(
+                "SOFTWARE\\Policies\\Microsoft\\Windows\\System",
+                KEY_ALL_ACCESS,
+            ) {
+                let _ = key.delete_value("AllowCrossDeviceClipboard");
+            }
+            Ok(())
+        })
+        .build()
+}
+
+/// Creates the "flush-dns-reset-winsock" optimization.
+pub fn flush_dns_reset_winsock() -> OptimizationDef {
+    let meta = Optimization {
+        id: "flush-dns-reset-winsock".to_string(),
+        category: Category::Network,
+        title: "Vaciar caché DNS y restablecer Winsock".to_string(),
+        description: "Limpia la tabla de resolución de nombres de dominio y reinicia la pila de red de Windows.".to_string(),
+        rationale: "Resuelve fallos de carga de webs y conexiones sin perder la configuración del adaptador. El restablecimiento de Winsock se completa al reiniciar.".to_string(),
+        risk: RiskLevel::Low,
+        requires_reboot: true,
+        applies_to: Applicability {
+            os_min_build: Some("19044".to_string()),
+            hardware_filters: vec![],
+            conflicts_with: vec![],
+        },
+        snapshot: SnapshotSpec {
+            registry_keys: vec![],
+            services: vec![],
+            files: vec![],
+        },
+        available: false,
+        requires_admin: true,
+    };
+
+    OptimizationDef::builder(meta)
+        .apply(|| {
+            let flush = Command::new("ipconfig.exe")
+                .arg("/flushdns")
+                .output()
+                .map_err(|e| e.to_string())?;
+            if !flush.status.success() {
+                return Err(String::from_utf8_lossy(&flush.stderr).to_string());
+            }
+
+            let reset = Command::new("netsh.exe")
+                .args(["winsock", "reset"])
+                .output()
+                .map_err(|e| e.to_string())?;
+            if !reset.status.success() {
+                return Err(String::from_utf8_lossy(&reset.stderr).to_string());
+            }
+
+            Ok("Caché DNS vaciada y Winsock restablecido. Reinicia para completarlo".to_string())
+        })
+        // Both commands report their own success; there is no persistent state
+        // to inspect afterwards.
+        .verify(|| Ok(VerificationResult::Verified))
+        .rollback(|| Ok(()))
+        .build()
+}
+
+/// Directories that hold compiled shader caches for DirectX and the main GPU
+/// vendors. Missing directories are simply skipped.
+fn shader_cache_dirs() -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+    if let Some(local) = std::env::var_os("LOCALAPPDATA").map(PathBuf::from) {
+        dirs.push(local.join("D3DSCache"));
+        dirs.push(local.join("NVIDIA").join("DXCache"));
+        dirs.push(local.join("NVIDIA").join("GLCache"));
+        dirs.push(local.join("AMD").join("DxCache"));
+        dirs.push(local.join("AMD").join("DxcCache"));
+        dirs.push(local.join("AMD").join("GLCache"));
+        dirs.push(local.join("AMD").join("VkCache"));
+        dirs.push(local.join("Intel").join("ShaderCache"));
+    }
+    if let Some(program_data) = std::env::var_os("ProgramData").map(PathBuf::from) {
+        dirs.push(program_data.join("NVIDIA Corporation").join("NV_Cache"));
+    }
+    dirs
+}
+
+/// Removes the contents of `dir` and returns the bytes and files removed.
+/// Files locked by a running process are skipped instead of failing the tweak.
+fn clear_directory(dir: &Path) -> (u64, usize) {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return (0, 0);
+    };
+
+    let mut freed = 0u64;
+    let mut removed = 0usize;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let is_dir = entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false);
+        let size = if is_dir {
+            directory_size(&path)
+        } else {
+            entry.metadata().map(|meta| meta.len()).unwrap_or(0)
+        };
+
+        let deleted = if is_dir {
+            fs::remove_dir_all(&path).is_ok()
+        } else {
+            fs::remove_file(&path).is_ok()
+        };
+        if deleted {
+            freed += size;
+            removed += 1;
+        }
+    }
+    (freed, removed)
+}
+
+/// Total size of the files below `dir`, without following errors.
+fn directory_size(dir: &Path) -> u64 {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return 0;
+    };
+    entries
+        .flatten()
+        .map(|entry| {
+            let path = entry.path();
+            if entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false) {
+                directory_size(&path)
+            } else {
+                entry.metadata().map(|meta| meta.len()).unwrap_or(0)
+            }
+        })
+        .sum()
+}
+
+/// Human-readable size for the apply message.
+fn format_size(bytes: u64) -> String {
+    const KB: f64 = 1024.0;
+    const MB: f64 = KB * 1024.0;
+    const GB: f64 = MB * 1024.0;
+
+    let value = bytes as f64;
+    if value >= GB {
+        format!("{:.2} GB", value / GB)
+    } else if value >= MB {
+        format!("{:.1} MB", value / MB)
+    } else if value >= KB {
+        format!("{:.0} KB", value / KB)
+    } else {
+        format!("{bytes} B")
+    }
 }
 
 /// Helper to set a registry value.

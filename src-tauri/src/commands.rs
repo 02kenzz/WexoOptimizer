@@ -84,6 +84,7 @@ pub fn save_settings(
     state: State<'_, AppState>,
     settings: AppSettings,
 ) -> Result<AppSettings, CommandError> {
+    let previous = state.settings_snapshot();
     let settings = settings.sanitize();
     config::save_settings(&state.paths, &settings)?;
 
@@ -99,7 +100,16 @@ pub fn save_settings(
     if settings.overlay_enabled {
         state.start_overlay();
     }
-    crate::overlay::apply(&app, settings.overlay_enabled);
+
+    // A setting save must not pop the overlay open: only an explicit off→on
+    // transition shows it, and off hides it. Any other save just repositions
+    // the window when it already exists.
+    match (previous.overlay_enabled, settings.overlay_enabled) {
+        (false, true) => crate::overlay::apply(&app, true),
+        (true, false) => crate::overlay::hide(&app),
+        (true, true) => crate::overlay::refresh(&app),
+        (false, false) => {}
+    }
 
     tracing::info!(?settings, "settings updated");
     Ok(settings)

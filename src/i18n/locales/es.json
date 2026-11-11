@@ -41,6 +41,7 @@
     "cancel": "Cancelar"
   },
   "risk": {
+    "very-low": "Muy bajo",
     "low": "Bajo",
     "medium": "Medio",
     "high": "Alto"
@@ -260,7 +261,7 @@
     "saved": "Los cambios se guardan automáticamente",
     "tray": "Minimizar a la bandeja",
     "overlay": "Overlay de rendimiento",
-    "overlayHint": "Ventana flotante con FPS, CPU, GPU y RAM sobre el juego. No recibe clics y no aparece en la barra de tareas. Alt+R la muestra u oculta. El FPS necesita que la app tenga permisos de administrador y el juego debe ir en ventana o sin bordes.",
+    "overlayHint": "Ventana flotante con FPS, CPU, GPU y RAM sobre el juego. No recibe clics y no aparece en la barra de tareas. Arranca oculta: pulsa Alt+R para mostrarla u ocultarla. El FPS necesita que la app tenga permisos de administrador y el juego debe ir en ventana o sin bordes.",
     "actions": "Acciones",
     "openLogs": "Carpeta de logs",
     "open": "Abrir",
@@ -290,7 +291,7 @@
     "overlayOrientationHorizontal": "Horizontal",
     "overlayShortcut": "Atajo de teclado",
     "overlayShortcutToggle": "Mostrar u ocultar",
-    "overlayShortcutHint": "Funciona mientras el overlay esté activado.",
+    "overlayShortcutHint": "El overlay arranca oculto; Alt+R lo muestra u oculta mientras esté activado.",
     "overlayOpacity": "Opacidad",
     "overlayClose": "Listo"
   },

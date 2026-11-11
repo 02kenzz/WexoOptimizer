@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-11-11
+
+### Added
+- Shader cache cleanup: removes stale DirectX, NVIDIA, AMD and Intel shader caches and reports the space freed
+- Cloud clipboard and cross-device sync can be disabled from the Optimizations page
+- DNS cache flush plus Winsock reset, with a reboot note
+
+### Changed
+- The overlay starts hidden while remaining enabled, so `Alt+R` reveals it and it never pops up at launch
+- Saving any other setting no longer opens the overlay
+
 ## [0.3.1] - 2026-11-11
 
 ### Added

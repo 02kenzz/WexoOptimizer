@@ -73,12 +73,9 @@ pub fn run() {
             // Create system tray
             create_tray(app.handle().clone())?;
 
-            // Reopen the performance overlay when it was left enabled.
-            let state = app.state::<AppState>();
-            if state.settings_snapshot().overlay_enabled {
-                state.start_overlay();
-                overlay::apply(app.handle(), true);
-            }
+            // The overlay stays enabled but hidden on purpose: it only appears
+            // when the user presses Alt+R, so it never pops up over a game at
+            // launch.
 
             // Handle window close event (minimize to tray if enabled)
             if let Some(window) = app.get_webview_window("main") {

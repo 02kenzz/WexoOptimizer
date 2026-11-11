@@ -93,6 +93,14 @@ pub fn hide(app: &tauri::AppHandle) {
     }
 }
 
+/// Applies the current position and size to an existing overlay without
+/// changing whether it is visible.
+pub fn refresh(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window(LABEL) {
+        place(&window, &overlay_settings(app));
+    }
+}
+
 /// Current overlay preferences, read from the state the commands write to.
 fn overlay_settings(app: &tauri::AppHandle) -> OverlaySettings {
     app.state::<AppState>().settings_snapshot().overlay

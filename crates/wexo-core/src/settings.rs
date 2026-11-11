@@ -35,7 +35,7 @@ impl Default for AppSettings {
             minimize_to_tray: true,
             update_channel: UpdateChannel::Stable,
             telemetry_enabled: false,
-            overlay_enabled: false,
+            overlay_enabled: true,
             overlay: OverlaySettings::default(),
             data_dir: None,
         }

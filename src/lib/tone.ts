@@ -15,6 +15,7 @@ export function severityTone(severity: Severity): Tone {
 
 export function riskTone(risk: RiskLevel): Tone {
   switch (risk) {
+    case "very-low":
     case "low":
       return "ok";
     case "medium":

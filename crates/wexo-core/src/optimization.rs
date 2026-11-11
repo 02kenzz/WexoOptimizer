@@ -40,9 +40,10 @@ pub enum Category {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, TS)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "kebab-case")]
 #[ts(export, export_to = "../../../src/types/generated/")]
 pub enum RiskLevel {
+    VeryLow,
     Low,
     Medium,
     High,
@@ -123,6 +124,7 @@ mod tests {
     fn risk_levels_are_ordered() {
         assert!(RiskLevel::High > RiskLevel::Medium);
         assert!(RiskLevel::Medium > RiskLevel::Low);
+        assert!(RiskLevel::Low > RiskLevel::VeryLow);
     }
 
     #[test]

@@ -49,7 +49,7 @@ Un centro de control de escritorio para saber **qué está pasando en tu equipo*
 - **Bajo consumo**: el monitor usa buffers circulares e intervalos configurables, con el objetivo de mantenerse ligero en segundo plano.
 - **Bilingüe**: interfaz completa en español e inglés, con temas claro, oscuro, sistema y alto contraste.
 
-> **Estado actual:** v0.3.1. Núcleo de diagnóstico, monitor, motor de optimizaciones, rollback, herramientas y overlay funcionando en Windows. En Linux están operativas la monitorización y las optimizaciones para GNOME/systemd.
+> **Estado actual:** v0.3.2. Núcleo de diagnóstico, monitor, motor de optimizaciones, rollback, herramientas y overlay funcionando en Windows. En Linux están operativas la monitorización y las optimizaciones para GNOME/systemd.
 
 ---
 

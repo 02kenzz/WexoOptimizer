@@ -91,7 +91,7 @@ const defaultSettings: AppSettings = {
   minimizeToTray: false,
   updateChannel: "stable",
   telemetryEnabled: false,
-  overlayEnabled: false,
+  overlayEnabled: true,
   overlay: {
     showFps: true,
     showCpu: true,

@@ -80,6 +80,9 @@ impl OptimizationRegistry {
             self.register(enable_hags());
             self.register(reduce_visual_effects());
             self.register(ntfs_last_access());
+            self.register(clean_shader_cache());
+            self.register(disable_cloud_clipboard());
+            self.register(flush_dns_reset_winsock());
         }
 
         #[cfg(target_os = "linux")]
