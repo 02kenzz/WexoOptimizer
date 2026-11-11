@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-11-11
+
+### Added
+- Overlay configuration dialog: metrics, horizontal/vertical layout, screen corner and opacity
+- `Alt+R` global shortcut to show or hide the overlay while it is enabled
+- 1% low frame rate and a frame-time trend on the overlay
+
+### Changed
+- The overlay opens in the horizontal layout by default
+- LibreHardwareMonitor now starts without a tray icon and with its window hidden
+
+### Fixed
+- Stale `Badge` test asserting a class the component no longer renders
+
 ## [0.3.0] - 2026-11-10
 
 ### Added

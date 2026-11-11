@@ -49,7 +49,7 @@ A desktop control center to know **what is happening on your machine** and **cha
 - **Low overhead**: the monitor uses circular buffers and configurable intervals, designed to stay light in the background.
 - **Bilingual**: full Spanish and English UI, with light, dark, system and high-contrast themes.
 
-> **Current status:** v0.3.0. Diagnostics, monitor, optimization engine, rollback, tools and overlay working on Windows. On Linux, monitoring and GNOME/systemd optimizations are operational.
+> **Current status:** v0.3.1. Diagnostics, monitor, optimization engine, rollback, tools and overlay working on Windows. On Linux, monitoring and GNOME/systemd optimizations are operational.
 
 ---
 
