@@ -6,7 +6,7 @@ import de from "./locales/de.json";
 import en from "./locales/en.json";
 import es from "./locales/es.json";
 import fr from "./locales/fr.json";
-import pl from "./locales/pl.json";
+import ru from "./locales/ru.json";
 import zh from "./locales/zh.json";
 
 /** Languages written right to left. */
@@ -29,7 +29,7 @@ void i18n.use(initReactI18next).init({
     de: { translation: de },
     fr: { translation: fr },
     ar: { translation: ar },
-    pl: { translation: pl },
+    ru: { translation: ru },
   },
   lng: "es",
   fallbackLng: "es",

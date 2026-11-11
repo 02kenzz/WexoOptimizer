@@ -40,7 +40,7 @@ const LANGUAGES: { value: Language; label: string }[] = [
   { value: "de", label: "Deutsch" },
   { value: "fr", label: "Français" },
   { value: "ar", label: "العربية" },
-  { value: "pl", label: "Polski" },
+  { value: "ru", label: "Русский" },
 ];
 
 function Section({

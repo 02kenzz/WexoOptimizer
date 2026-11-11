@@ -125,7 +125,7 @@ pub enum Language {
     De,
     Fr,
     Ar,
-    Pl,
+    Ru,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -167,7 +167,7 @@ mod tests {
             (Language::De, "\"de\""),
             (Language::Fr, "\"fr\""),
             (Language::Ar, "\"ar\""),
-            (Language::Pl, "\"pl\""),
+            (Language::Ru, "\"ru\""),
         ] {
             assert_eq!(serde_json::to_string(&language).unwrap(), code);
         }
