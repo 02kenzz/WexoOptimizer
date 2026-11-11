@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/icon.png" alt="Wexo Optimizer" width="112" />
+<img src="assets/logo.png" alt="Wexo Optimizer" width="112" />
 
 # Wexo Optimizer
 
