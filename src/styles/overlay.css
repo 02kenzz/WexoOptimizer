@@ -69,7 +69,7 @@
 }
 
 .ov-state {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -125,7 +125,7 @@
 }
 
 .ov-low {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -209,7 +209,7 @@
 }
 
 .ov-figure {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: flex;
   align-items: baseline;
   gap: 6px;
@@ -225,7 +225,7 @@
 .ov-caption {
   display: block;
   margin-top: 4px;
-  text-align: right;
+  text-align: end;
   font: 500 9px / 1 var(--mono);
   font-variant-numeric: tabular-nums;
   color: var(--dim);
@@ -264,7 +264,7 @@
 }
 
 .ov-net {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: flex;
   align-items: baseline;
   gap: 10px;
@@ -303,12 +303,12 @@
 .ov-card[data-orientation="horizontal"] .ov-fps {
   flex: 0 0 140px;
   min-width: 0;
-  padding-right: 14px;
-  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  padding-inline-end: 14px;
+  border-inline-end: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .ov-card[data-orientation="horizontal"] .ov-fps:only-child {
-  border-right: 0;
+  border-inline-end: 0;
 }
 
 .ov-card[data-orientation="horizontal"] .ov-hero {
@@ -347,7 +347,7 @@
 
 .ov-card[data-orientation="horizontal"] .ov-net {
   flex: 0 0 100%;
-  margin-left: 0;
+  margin-inline-start: 0;
   flex-direction: column;
   align-items: flex-start;
   gap: 3px;
@@ -359,7 +359,7 @@
 }
 
 .ov-card[data-orientation="horizontal"] .ov-caption {
-  text-align: left;
+  text-align: start;
 }
 
 /* ---- configuration dialog ---- */
@@ -434,7 +434,7 @@
 
 .ovpct {
   width: 46px;
-  text-align: right;
+  text-align: end;
   font: 600 10.5px / 1 var(--mono);
   color: var(--accent);
 }

@@ -23,13 +23,24 @@ import { Switch, Tooltip } from "@/components/ui/Switch";
 import { ipc, isDesktop } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
-import type { Theme } from "@/types";
+import type { Language, Theme } from "@/types";
 
 const THEMES: { value: Theme; icon: typeof Sun; labelKey: string }[] = [
   { value: "system", icon: MonitorIcon, labelKey: "settings.themeSystem" },
   { value: "light", icon: Sun, labelKey: "settings.themeLight" },
   { value: "dark", icon: Moon, labelKey: "settings.themeDark" },
   { value: "high-contrast", icon: Contrast, labelKey: "settings.themeHighContrast" },
+];
+
+/** The seven most spoken languages, each shown in its own script. */
+const LANGUAGES: { value: Language; label: string }[] = [
+  { value: "es", label: "Español" },
+  { value: "en", label: "English" },
+  { value: "zh", label: "中文" },
+  { value: "hi", label: "हिन्दी" },
+  { value: "fr", label: "Français" },
+  { value: "ar", label: "العربية" },
+  { value: "bn", label: "বাংলা" },
 ];
 
 function Section({
@@ -57,14 +68,26 @@ function Section({
   );
 }
 
-function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+function Row({
+  label,
+  hint,
+  wide = false,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  wide?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <div className="row">
+    <div className={cn("row", wide && "row-wide")}>
       <div className="row-label">
         <b>{label}</b>
         {hint ? <span>{hint}</span> : null}
       </div>
-      <div style={{ flexShrink: 0 }}>{children}</div>
+      <div className="row-control" style={wide ? undefined : { flexShrink: 0 }}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -103,16 +126,18 @@ export function Settings() {
     <section className="view" id="configuracion">
       <div className="grid cols-2">
         <Section title={t("settings.appearance")} icon={Sun}>
-          <Row label={t("settings.language")} hint={t("settings.saved")}>
-            <div className="seg">
-              {(["es", "en"] as const).map((language) => (
+          <Row label={t("settings.language")} hint={t("settings.saved")} wide>
+            <div className="lang-grid">
+              {LANGUAGES.map((language) => (
                 <button
-                  key={language}
+                  key={language.value}
                   type="button"
-                  onClick={() => void updateSettings({ language })}
-                  className={cn(settings.language === language && "active")}
+                  lang={language.value}
+                  dir={language.value === "ar" ? "rtl" : undefined}
+                  onClick={() => void updateSettings({ language: language.value })}
+                  className={cn("lang-btn", settings.language === language.value && "active")}
                 >
-                  {language === "es" ? "Español" : "English"}
+                  {language.label}
                 </button>
               ))}
             </div>

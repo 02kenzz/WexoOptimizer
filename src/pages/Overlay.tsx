@@ -2,6 +2,7 @@ import { Activity, Cpu, MemoryStick, Wifi } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import i18n from "@/i18n";
 import { defaultSettings, ipc } from "@/lib/ipc";
 import { clamp, formatBytes, formatRate } from "@/lib/utils";
 import type { OverlaySettings, OverlayStats } from "@/types";
@@ -176,7 +177,11 @@ export function Overlay() {
     const load = async () => {
       try {
         const current = await ipc.getSettings();
-        if (!cancelled) setSettings(current.overlay);
+        if (cancelled) return;
+        setSettings(current.overlay);
+        if (i18n.language !== current.language) {
+          void i18n.changeLanguage(current.language);
+        }
       } catch {
         // Keep the defaults: measurements still render without preferences.
       }

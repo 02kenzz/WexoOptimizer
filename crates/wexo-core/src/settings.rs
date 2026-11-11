@@ -120,6 +120,12 @@ pub enum OverlayOrientation {
 pub enum Language {
     Es,
     En,
+    /// Simplified Chinese.
+    Zh,
+    Hi,
+    Fr,
+    Ar,
+    Bn,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -150,6 +156,21 @@ mod tests {
         assert_eq!(settings.language, Language::Es);
         assert!(!settings.telemetry_enabled);
         assert_eq!(settings.monitor_interval_ms, 1000);
+    }
+
+    #[test]
+    fn language_serializes_lowercase_codes() {
+        for (language, code) in [
+            (Language::Es, "\"es\""),
+            (Language::En, "\"en\""),
+            (Language::Zh, "\"zh\""),
+            (Language::Hi, "\"hi\""),
+            (Language::Fr, "\"fr\""),
+            (Language::Ar, "\"ar\""),
+            (Language::Bn, "\"bn\""),
+        ] {
+            assert_eq!(serde_json::to_string(&language).unwrap(), code);
+        }
     }
 
     #[test]
