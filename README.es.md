@@ -103,6 +103,7 @@ Un centro de control de escritorio para saber **qué está pasando en tu equipo*
 - Mantenimiento de disco: desfragmentación, TRIM para SSD y CHKDSK.
 - Consola en vivo para cada tarea, con duración, código de salida y opción de detener.
 - Mantenimiento de la base de datos interna: *vacuum* y reindexado.
+- Controladores gráficos: muestra el controlador instalado de cada GPU y comprueba si está al día. NVIDIA se compara con la consulta oficial del fabricante; AMD e Intel ofrecen un botón para abrir su software de actualización.
 
 ### Overlay de rendimiento
 

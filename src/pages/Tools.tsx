@@ -1,8 +1,11 @@
 import {
   CheckCircle2,
   Database,
+  Download,
   HardDrive,
   Loader2,
+  MonitorUp,
+  RefreshCw,
   ShieldCheck,
   Square,
   Trash2,
@@ -15,7 +18,15 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useToast } from "@/hooks/useToast";
-import { type CleanReport, ipc, isDesktop, type JobSnapshot, type JobStatus } from "@/lib/ipc";
+import {
+  type CleanReport,
+  type GpuDriverInfo,
+  type GpuDriverStatus,
+  ipc,
+  isDesktop,
+  type JobSnapshot,
+  type JobStatus,
+} from "@/lib/ipc";
 import { formatBytes } from "@/lib/utils";
 import { useAppStore } from "@/stores/appStore";
 
@@ -39,11 +50,25 @@ const STATUS_TONE: Record<JobStatus, "accent" | "ok" | "danger" | "warn"> = {
   cancelled: "warn",
 };
 
+const DRIVER_TONE: Record<GpuDriverStatus, "ok" | "warn" | "muted"> = {
+  upToDate: "ok",
+  outdated: "warn",
+  unknown: "muted",
+};
+
 function formatElapsed(startedMs: number, finishedMs: number | null, nowMs: number): string {
   const totalSeconds = Math.max(0, Math.floor(((finishedMs ?? nowMs) - startedMs) / 1000));
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+/** Formats an ISO `YYYY-MM-DD` date in the active UI language. */
+function formatDriverDate(value: string | null, locale: string): string | null {
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(locale);
 }
 
 function ToolCard({
@@ -85,7 +110,7 @@ function ToolCard({
 }
 
 export function Tools() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { showToast } = useToast();
   const appInfo = useAppStore((state) => state.appInfo);
 
@@ -97,6 +122,9 @@ export function Tools() {
   } | null>(null);
   const [job, setJob] = useState<JobSnapshot | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [drivers, setDrivers] = useState<GpuDriverInfo[] | null>(null);
+  const [driversLoading, setDriversLoading] = useState(false);
+  const [driversError, setDriversError] = useState<string | null>(null);
 
   const jobId = job?.id ?? null;
   const jobStatus = job?.status ?? null;
@@ -295,6 +323,42 @@ export function Tools() {
     }
   };
 
+  const refreshDrivers = useCallback(async () => {
+    if (!isDesktop) return;
+    setDriversLoading(true);
+    setDriversError(null);
+    try {
+      setDrivers(await ipc.checkGpuDrivers());
+    } catch (cause) {
+      setDriversError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setDriversLoading(false);
+    }
+  }, []);
+
+  // Checks once when the page opens. The backend caches the vendor lookup for
+  // a few hours, so revisiting the page does not hammer the server.
+  useEffect(() => {
+    void refreshDrivers();
+  }, [refreshDrivers]);
+
+  const openDriverUpdate = async (driver: GpuDriverInfo) => {
+    if (!requireDesktop()) return;
+    try {
+      const target = driver.detailsUrl ?? driver.updateUrl;
+      const opened = await ipc.openGpuDriverUpdate(driver.vendor, target);
+      showToast({
+        title:
+          opened === "browser"
+            ? t("tools.driversOpenedBrowser")
+            : t("tools.driversOpened", { name: opened }),
+        tone: "ok",
+      });
+    } catch (cause) {
+      toastError(t("tools.driversOpenFailed"), cause);
+    }
+  };
+
   const cards: ToolCardProps[] = [
     {
       icon: Trash2,
@@ -364,6 +428,7 @@ export function Tools() {
 
   const elapsed = job ? formatElapsed(job.startedMs, job.finishedMs, now) : "";
   const running = job?.status === "running";
+  const outdatedCount = drivers?.filter((driver) => driver.status === "outdated").length ?? 0;
 
   return (
     <section className="view" id="herramientas">
@@ -372,6 +437,101 @@ export function Tools() {
           <ToolCard key={card.title} {...card} />
         ))}
       </div>
+
+      <Card>
+        <div className="panel-head">
+          <h3 className="panel-title">
+            <MonitorUp size={14} strokeWidth={2} aria-hidden />
+            {t("tools.drivers")}
+          </h3>
+          <div className="tool-console-meta">
+            {drivers && drivers.length > 0 ? (
+              <Badge tone={outdatedCount > 0 ? "warn" : "ok"} dot>
+                {outdatedCount > 0
+                  ? t("tools.driversOutdatedCount", { count: outdatedCount })
+                  : t("tools.driversAllCurrent")}
+              </Badge>
+            ) : null}
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={driversLoading || !isDesktop}
+              onClick={() => void refreshDrivers()}
+            >
+              <RefreshCw
+                size={13}
+                className={driversLoading ? "animate-spin" : undefined}
+                aria-hidden
+              />
+              {t("tools.driversRefresh")}
+            </Button>
+          </div>
+        </div>
+
+        {!isDesktop ? (
+          <p className="tool-preview">{t("tools.browserModeDesc")}</p>
+        ) : driversError ? (
+          <p className="tool-preview">
+            {t("tools.driversFailed")}: {driversError}
+          </p>
+        ) : drivers === null || (driversLoading && drivers.length === 0) ? (
+          <p className="tool-preview driver-loading">
+            <Loader2 size={13} className="animate-spin" aria-hidden />
+            {t("tools.driversChecking")}
+          </p>
+        ) : drivers.length === 0 ? (
+          <p className="tool-preview">{t("tools.driversEmpty")}</p>
+        ) : (
+          <>
+            <div className="driver-list">
+              {drivers.map((driver) => {
+                const released = formatDriverDate(driver.releaseDate, i18n.language);
+                const outdated = driver.status === "outdated";
+                return (
+                  <div className="driver-row" key={`${driver.name}-${driver.vendor}`}>
+                    <div className="driver-main">
+                      <div className="driver-title">
+                        <strong>{driver.name}</strong>
+                        <Badge tone={DRIVER_TONE[driver.status]} dot>
+                          {t(`tools.driverStatus.${driver.status}`)}
+                        </Badge>
+                      </div>
+                      <div className="driver-meta">
+                        <span>
+                          {t("tools.driversInstalled")}: <b>{driver.installedVersion || "—"}</b>
+                        </span>
+                        <span>
+                          {t("tools.driversLatest")}: <b>{driver.latestVersion ?? "—"}</b>
+                        </span>
+                        {released ? (
+                          <span>
+                            {t("tools.driversReleased")}: <b>{released}</b>
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <Button
+                      variant={outdated ? "primary" : "glass"}
+                      size="sm"
+                      onClick={() => void openDriverUpdate(driver)}
+                    >
+                      <Download size={13} aria-hidden />
+                      {driver.softwareInstalled
+                        ? t("tools.driversOpenSoftware", {
+                            name: driver.softwareName ?? driver.vendorLabel,
+                          })
+                        : t("tools.driversDownload")}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+            {drivers.some((driver) => driver.status === "unknown") ? (
+              <p className="driver-note">{t("tools.driversUnknownNote")}</p>
+            ) : null}
+          </>
+        )}
+      </Card>
 
       {preview ? (
         <Card>

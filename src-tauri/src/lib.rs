@@ -120,6 +120,8 @@ pub fn run() {
             commands::get_tool_jobs,
             commands::cancel_tool_job,
             commands::maintain_database,
+            commands::check_gpu_drivers,
+            commands::open_gpu_driver_update,
             commands::open_logs_dir,
             commands::relaunch_as_admin,
         ])

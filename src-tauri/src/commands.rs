@@ -303,6 +303,27 @@ pub fn maintain_database(
     result.map_err(|error| error.to_string())
 }
 
+/// Checks every installed GPU against the vendor's latest driver.
+///
+/// Network work only happens for NVIDIA cards; AMD/Intel report `unknown`
+/// instead of a guessed version. Runs off the async runtime because the HTTP
+/// lookup blocks.
+#[tauri::command]
+pub async fn check_gpu_drivers(
+    state: State<'_, AppState>,
+) -> Result<Vec<wexo_sysinfo::drivers::GpuDriverInfo>, String> {
+    let gpus = state.collector.profile().gpus;
+    tauri::async_runtime::spawn_blocking(move || wexo_sysinfo::drivers::check_all(&gpus))
+        .await
+        .map_err(|error| error.to_string())
+}
+
+/// Opens the vendor's update software, falling back to its official page.
+#[tauri::command(async)]
+pub fn open_gpu_driver_update(vendor: String, url: Option<String>) -> Result<String, String> {
+    wexo_sysinfo::drivers::open_update(&vendor, url.as_deref())
+}
+
 /// Response types for Tauri commands (serializable).
 #[derive(serde::Serialize)]
 pub struct ApplyResultResponse {

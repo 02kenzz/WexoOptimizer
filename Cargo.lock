@@ -4314,7 +4314,7 @@ dependencies = [
 
 [[package]]
 name = "wexo-app"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -4337,7 +4337,7 @@ dependencies = [
 
 [[package]]
 name = "wexo-core"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -4347,7 +4347,7 @@ dependencies = [
 
 [[package]]
 name = "wexo-monitor"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "serde",
  "tracing",
@@ -4356,7 +4356,7 @@ dependencies = [
 
 [[package]]
 name = "wexo-optimizer"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "dirs 5.0.1",
  "libc",
@@ -4375,7 +4375,7 @@ dependencies = [
 
 [[package]]
 name = "wexo-rules"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -4385,7 +4385,7 @@ dependencies = [
 
 [[package]]
 name = "wexo-safety"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "dirs 5.0.1",
  "parking_lot",
@@ -4401,10 +4401,11 @@ dependencies = [
 
 [[package]]
 name = "wexo-sysinfo"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "libc",
  "serde",
+ "serde_json",
  "sysinfo",
  "tracing",
  "wexo-core",
@@ -4414,7 +4415,7 @@ dependencies = [
 
 [[package]]
 name = "wexo-tools"
-version = "0.4.2"
+version = "0.5.0"
 dependencies = [
  "serde",
  "serde_json",

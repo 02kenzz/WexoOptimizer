@@ -351,6 +351,27 @@
       "succeeded": "Успешно",
       "failed": "Ошибка",
       "cancelled": "Отменено"
+    },
+    "drivers": "Драйверы графики",
+    "driversRefresh": "Проверить снова",
+    "driversChecking": "Проверка драйверов…",
+    "driversFailed": "Не удалось проверить драйверы",
+    "driversEmpty": "Видеокарта не найдена",
+    "driversAllCurrent": "Актуально",
+    "driversOutdatedCount": "Доступно обновлений: {{count}}",
+    "driversInstalled": "Установлено",
+    "driversLatest": "Последняя версия",
+    "driversReleased": "Дата выпуска",
+    "driversDownload": "Скачать драйвер",
+    "driversOpenSoftware": "Открыть {{name}}",
+    "driversOpened": "Открыто: {{name}}",
+    "driversOpenedBrowser": "Открыта официальная страница",
+    "driversOpenFailed": "Не удалось открыть обновление",
+    "driversUnknownNote": "Автоматическая проверка версии доступна только для NVIDIA. Для AMD и Intel используйте фирменное ПО для поиска обновлений.",
+    "driverStatus": {
+      "upToDate": "Актуально",
+      "outdated": "Доступно обновление",
+      "unknown": "Не проверено"
     }
   },
   "overlay": {

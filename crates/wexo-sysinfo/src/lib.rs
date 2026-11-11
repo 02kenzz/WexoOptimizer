@@ -3,6 +3,7 @@
 //! Windows-specific access is isolated here so the rest of the workspace stays
 //! testable and portable.
 
+pub mod drivers;
 pub mod fps;
 pub mod gpu;
 pub mod overlay;

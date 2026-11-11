@@ -9,6 +9,7 @@ rust-version.workspace = true
 [dependencies]
 wexo-core = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 tracing = { workspace = true }
 sysinfo = "0.33"
 
@@ -16,6 +17,7 @@ sysinfo = "0.33"
 windows-sys = { version = "0.59", features = [
     "Win32_Foundation",
     "Win32_Graphics_Gdi",
+    "Win32_Networking_WinHttp",
     "Win32_Security",
     "Win32_System_Diagnostics_Etw",
     "Win32_System_LibraryLoader",

@@ -351,6 +351,27 @@
       "succeeded": "成功",
       "failed": "失败",
       "cancelled": "已取消"
+    },
+    "drivers": "显卡驱动",
+    "driversRefresh": "重新检查",
+    "driversChecking": "正在检查驱动…",
+    "driversFailed": "无法检查驱动",
+    "driversEmpty": "未检测到显卡",
+    "driversAllCurrent": "已是最新",
+    "driversOutdatedCount": "有 {{count}} 个更新可用",
+    "driversInstalled": "已安装",
+    "driversLatest": "最新",
+    "driversReleased": "发布日期",
+    "driversDownload": "下载驱动",
+    "driversOpenSoftware": "打开 {{name}}",
+    "driversOpened": "已打开 {{name}}",
+    "driversOpenedBrowser": "已打开官方页面",
+    "driversOpenFailed": "无法打开更新",
+    "driversUnknownNote": "自动版本检查仅适用于 NVIDIA。对于 AMD 和 Intel，请使用厂商软件检查更新。",
+    "driverStatus": {
+      "upToDate": "已是最新",
+      "outdated": "有可用更新",
+      "unknown": "未验证"
     }
   },
   "overlay": {

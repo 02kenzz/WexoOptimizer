@@ -103,6 +103,7 @@ A desktop control center to know **what is happening on your machine** and **cha
 - Disk maintenance: defragmentation, SSD TRIM and CHKDSK.
 - Live console for every job, with elapsed time, exit code and a stop button.
 - Internal database maintenance: vacuum and reindex.
+- Graphics drivers: shows the installed driver for each GPU and checks whether it is current. NVIDIA is compared with the vendor's official lookup; AMD and Intel offer a button to open their update software.
 
 ### Performance overlay
 

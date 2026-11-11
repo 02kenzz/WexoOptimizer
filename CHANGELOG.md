@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-11-12
+
+### Added
+- Graphics driver section inside Tools: shows the installed driver for every GPU and checks whether it is current
+- NVIDIA drivers are compared against the vendor's official lookup (cached for six hours); AMD and Intel show the installed version and a button to open their official update software
+- One-click button to open the vendor's update app (NVIDIA App, AMD Software: Adrenalin Edition, Intel Arc Control) or its official download page
+
 ## [0.4.2] - 2026-11-11
 
 ### Changed

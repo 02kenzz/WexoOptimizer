@@ -351,6 +351,27 @@
       "succeeded": "ناجحة",
       "failed": "فاشلة",
       "cancelled": "ملغاة"
+    },
+    "drivers": "برامج تشغيل الرسوميات",
+    "driversRefresh": "تحقق مرة أخرى",
+    "driversChecking": "جارٍ التحقق من برامج التشغيل…",
+    "driversFailed": "تعذر التحقق من برامج التشغيل",
+    "driversEmpty": "لم يتم اكتشاف بطاقة رسوميات",
+    "driversAllCurrent": "محدَّث",
+    "driversOutdatedCount": "{{count}} تحديث(تحديثات) متاحة",
+    "driversInstalled": "المثبَّت",
+    "driversLatest": "الأحدث",
+    "driversReleased": "تاريخ الإصدار",
+    "driversDownload": "تنزيل برنامج التشغيل",
+    "driversOpenSoftware": "فتح {{name}}",
+    "driversOpened": "تم فتح {{name}}",
+    "driversOpenedBrowser": "تم فتح الصفحة الرسمية",
+    "driversOpenFailed": "تعذر فتح التحديث",
+    "driversUnknownNote": "التحقق التلقائي من الإصدار متاح لـ NVIDIA فقط. بالنسبة إلى AMD وIntel، استخدم برنامج الشركة المصنعة للبحث عن التحديثات.",
+    "driverStatus": {
+      "upToDate": "محدَّث",
+      "outdated": "يتوفر تحديث",
+      "unknown": "غير مُتحقَّق"
     }
   },
   "overlay": {

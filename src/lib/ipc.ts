@@ -64,6 +64,25 @@ export interface DatabaseReport {
   transactions: number;
 }
 
+/** Driver state relative to the vendor's latest release. */
+export type GpuDriverStatus = "upToDate" | "outdated" | "unknown";
+
+/** Result of a GPU driver check (mirrors `wexo_sysinfo::drivers::GpuDriverInfo`). */
+export interface GpuDriverInfo {
+  name: string;
+  vendor: string;
+  vendorLabel: string;
+  installedVersion: string;
+  latestVersion: string | null;
+  status: GpuDriverStatus;
+  releaseDate: string | null;
+  detailsUrl: string | null;
+  updateUrl: string;
+  softwareName: string | null;
+  softwareInstalled: boolean;
+  checkedAtMs: number;
+}
+
 /**
  * True when running inside the Tauri webview. In a plain browser (`npm run dev`)
  * there is no backend: data commands reject instead of returning fake metrics.
@@ -256,6 +275,19 @@ export const ipc = {
   /** `vacuum` compacts the database, `reindex` rebuilds its indexes. */
   maintainDatabase(action: "vacuum" | "reindex"): Promise<DatabaseReport> {
     return isDesktop ? invoke("maintain_database", { action }) : backendUnavailable();
+  },
+
+  /** Compares each installed GPU driver against the vendor's latest release. */
+  checkGpuDrivers(): Promise<GpuDriverInfo[]> {
+    return isDesktop ? invoke("check_gpu_drivers") : backendUnavailable();
+  },
+
+  /**
+   * Opens the vendor's update software, falling back to the official page.
+   * Resolves to the software name, or `"browser"` when a page was opened.
+   */
+  openGpuDriverUpdate(vendor: string, url: string | null): Promise<string> {
+    return isDesktop ? invoke("open_gpu_driver_update", { vendor, url }) : backendUnavailable();
   },
 };
 

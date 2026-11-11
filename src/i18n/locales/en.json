@@ -351,6 +351,27 @@
       "succeeded": "Succeeded",
       "failed": "Failed",
       "cancelled": "Cancelled"
+    },
+    "drivers": "Graphics drivers",
+    "driversRefresh": "Check again",
+    "driversChecking": "Checking drivers…",
+    "driversFailed": "Could not check drivers",
+    "driversEmpty": "No graphics card detected",
+    "driversAllCurrent": "Up to date",
+    "driversOutdatedCount": "{{count}} update(s) available",
+    "driversInstalled": "Installed",
+    "driversLatest": "Latest",
+    "driversReleased": "Released",
+    "driversDownload": "Download driver",
+    "driversOpenSoftware": "Open {{name}}",
+    "driversOpened": "Opened {{name}}",
+    "driversOpenedBrowser": "Opened the official page",
+    "driversOpenFailed": "Could not open the update",
+    "driversUnknownNote": "Automatic version checks are only available for NVIDIA. For AMD and Intel, use the vendor's software to check for updates.",
+    "driverStatus": {
+      "upToDate": "Up to date",
+      "outdated": "Update available",
+      "unknown": "Not verified"
     }
   },
   "overlay": {
