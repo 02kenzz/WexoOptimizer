@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import ar from "./locales/ar.json";
-import bn from "./locales/bn.json";
+import de from "./locales/de.json";
 import en from "./locales/en.json";
 import es from "./locales/es.json";
 import fr from "./locales/fr.json";
-import hi from "./locales/hi.json";
+import pl from "./locales/pl.json";
 import zh from "./locales/zh.json";
 
-const LOCALES: Record<string, unknown> = { es, zh, hi, fr, ar, bn };
+const LOCALES: Record<string, unknown> = { es, zh, de, fr, ar, pl };
 
 /** Flattens a nested translation object into `path -> string` pairs. */
 function flatten(value: unknown, prefix = "", out = new Map<string, string>()) {

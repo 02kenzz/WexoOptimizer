@@ -47,9 +47,9 @@ A desktop control center to know **what is happening on your machine** and **cha
 - **Real data**: CPU, GPU, memory, disks, network and temperatures read from the system. If a sensor does not exist, the UI shows `—` or “No sensor”; never a made-up number.
 - **Safe changes**: every optimization captures a snapshot, applies atomically, verifies the result and records it in SQLite so it can be reverted with one click.
 - **Low overhead**: the monitor uses circular buffers and configurable intervals, designed to stay light in the background.
-- **Multilingual**: full UI in English, Spanish, Chinese, Hindi, French, Arabic (right-to-left) and Bengali, with light, dark, system and high-contrast themes.
+- **Multilingual**: full UI in English, Spanish, Chinese, German, French, Arabic (right-to-left) and Polish, with light, dark, system and high-contrast themes.
 
-> **Current status:** v0.4.0. Diagnostics, monitor, optimization engine, rollback, tools and overlay working on Windows. On Linux, monitoring and GNOME/systemd optimizations are operational.
+> **Current status:** v0.4.1. Diagnostics, monitor, optimization engine, rollback, tools and overlay working on Windows. On Linux, monitoring and GNOME/systemd optimizations are operational.
 
 ---
 

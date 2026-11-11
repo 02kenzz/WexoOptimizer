@@ -2,11 +2,11 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 
 import ar from "./locales/ar.json";
-import bn from "./locales/bn.json";
+import de from "./locales/de.json";
 import en from "./locales/en.json";
 import es from "./locales/es.json";
 import fr from "./locales/fr.json";
-import hi from "./locales/hi.json";
+import pl from "./locales/pl.json";
 import zh from "./locales/zh.json";
 
 /** Languages written right to left. */
@@ -26,10 +26,10 @@ void i18n.use(initReactI18next).init({
     es: { translation: es },
     en: { translation: en },
     zh: { translation: zh },
-    hi: { translation: hi },
+    de: { translation: de },
     fr: { translation: fr },
     ar: { translation: ar },
-    bn: { translation: bn },
+    pl: { translation: pl },
   },
   lng: "es",
   fallbackLng: "es",

@@ -47,9 +47,9 @@ Un centro de control de escritorio para saber **qué está pasando en tu equipo*
 - **Datos reales**: CPU, GPU, memoria, discos, red y temperaturas leídos del sistema. Si un sensor no existe, la interfaz muestra `—` o «Sin sensor»; nunca un número inventado.
 - **Cambios seguros**: cada optimización captura un snapshot, se aplica de forma atómica, se verifica y queda registrada en SQLite para revertirla con un clic.
 - **Bajo consumo**: el monitor usa buffers circulares e intervalos configurables, con el objetivo de mantenerse ligero en segundo plano.
-- **Multiidioma**: interfaz completa en español, inglés, chino, hindi, francés, árabe (de derecha a izquierda) y bengalí, con temas claro, oscuro, sistema y alto contraste.
+- **Multiidioma**: interfaz completa en español, inglés, chino, alemán, francés, árabe (de derecha a izquierda) y polaco, con temas claro, oscuro, sistema y alto contraste.
 
-> **Estado actual:** v0.4.0. Núcleo de diagnóstico, monitor, motor de optimizaciones, rollback, herramientas y overlay funcionando en Windows. En Linux están operativas la monitorización y las optimizaciones para GNOME/systemd.
+> **Estado actual:** v0.4.1. Núcleo de diagnóstico, monitor, motor de optimizaciones, rollback, herramientas y overlay funcionando en Windows. En Linux están operativas la monitorización y las optimizaciones para GNOME/systemd.
 
 ---
 

@@ -122,10 +122,10 @@ pub enum Language {
     En,
     /// Simplified Chinese.
     Zh,
-    Hi,
+    De,
     Fr,
     Ar,
-    Bn,
+    Pl,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -164,10 +164,10 @@ mod tests {
             (Language::Es, "\"es\""),
             (Language::En, "\"en\""),
             (Language::Zh, "\"zh\""),
-            (Language::Hi, "\"hi\""),
+            (Language::De, "\"de\""),
             (Language::Fr, "\"fr\""),
             (Language::Ar, "\"ar\""),
-            (Language::Bn, "\"bn\""),
+            (Language::Pl, "\"pl\""),
         ] {
             assert_eq!(serde_json::to_string(&language).unwrap(), code);
         }

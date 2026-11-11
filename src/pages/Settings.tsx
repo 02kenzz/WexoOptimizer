@@ -32,15 +32,15 @@ const THEMES: { value: Theme; icon: typeof Sun; labelKey: string }[] = [
   { value: "high-contrast", icon: Contrast, labelKey: "settings.themeHighContrast" },
 ];
 
-/** The seven most spoken languages, each shown in its own script. */
+/** The supported languages, each shown in its own script. */
 const LANGUAGES: { value: Language; label: string }[] = [
   { value: "es", label: "Español" },
   { value: "en", label: "English" },
   { value: "zh", label: "中文" },
-  { value: "hi", label: "हिन्दी" },
+  { value: "de", label: "Deutsch" },
   { value: "fr", label: "Français" },
   { value: "ar", label: "العربية" },
-  { value: "bn", label: "বাংলা" },
+  { value: "pl", label: "Polski" },
 ];
 
 function Section({
