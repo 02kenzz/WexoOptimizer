@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - NVIDIA drivers are compared against the vendor's official lookup (cached for six hours); AMD and Intel show the installed version and a button to open their official update software
 - One-click button to open the vendor's update app (NVIDIA App, AMD Software: Adrenalin Edition, Intel Arc Control) or its official download page
 
+### Fixed
+- Graphics card memory is now read from the 64-bit registry value, so cards with more than 4 GB no longer show a wrong 4 GB figure
+
 ## [0.4.2] - 2026-11-11
 
 ### Changed

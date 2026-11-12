@@ -413,7 +413,85 @@ mod windows_query {
         }
     }
 
+    /// Dedicated VRAM reported by each display driver, keyed by `DriverDesc`.
+    ///
+    /// WMI's `AdapterRAM` is 32-bit, so it caps at 4 GB on larger cards. The
+    /// display class registry stores the real size as a 64-bit value next to
+    /// the driver description.
+    fn registry_vram() -> Vec<(String, u64)> {
+        use winreg::enums::{HKEY_LOCAL_MACHINE, KEY_READ, REG_BINARY, REG_DWORD, REG_QWORD};
+        use winreg::RegKey;
+
+        const CLASS_KEY: &str =
+            r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}";
+
+        fn read_bytes(key: &RegKey, name: &str) -> Option<u64> {
+            let value = key.get_raw_value(name).ok()?;
+            match value.vtype {
+                REG_QWORD if value.bytes.len() >= 8 => {
+                    Some(u64::from_le_bytes(value.bytes[..8].try_into().ok()?))
+                }
+                REG_DWORD if value.bytes.len() >= 4 => Some(u64::from(u32::from_le_bytes(
+                    value.bytes[..4].try_into().ok()?,
+                ))),
+                // Some drivers store the same value as raw little-endian bytes.
+                REG_BINARY if value.bytes.len() >= 8 => {
+                    Some(u64::from_le_bytes(value.bytes[..8].try_into().ok()?))
+                }
+                REG_BINARY if value.bytes.len() >= 4 => Some(u64::from(u32::from_le_bytes(
+                    value.bytes[..4].try_into().ok()?,
+                ))),
+                _ => None,
+            }
+        }
+
+        let Ok(class) =
+            RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey_with_flags(CLASS_KEY, KEY_READ)
+        else {
+            return Vec::new();
+        };
+
+        let mut entries = Vec::new();
+        for name in class.enum_keys().flatten() {
+            let Ok(adapter) = class.open_subkey_with_flags(&name, KEY_READ) else {
+                continue;
+            };
+            let desc: String = match adapter.get_value("DriverDesc") {
+                Ok(value) => value,
+                Err(_) => continue,
+            };
+            let desc = desc.trim().to_string();
+            if desc.is_empty() {
+                continue;
+            }
+            let bytes = read_bytes(&adapter, "HardwareInformation.qwMemorySize")
+                .or_else(|| read_bytes(&adapter, "HardwareInformation.MemorySize"))
+                .filter(|bytes| *bytes > 0);
+            if let Some(bytes) = bytes {
+                entries.push((desc, bytes));
+            }
+        }
+        entries
+    }
+
+    /// Finds the registry entry for a WMI adapter name. Names usually match
+    /// exactly, but a substring check covers driver-added suffixes.
+    pub(super) fn matching_vram(entries: &[(String, u64)], name: &str) -> Option<u64> {
+        entries
+            .iter()
+            .find(|(desc, _)| desc.eq_ignore_ascii_case(name))
+            .or_else(|| {
+                let wanted = name.to_ascii_lowercase();
+                entries.iter().find(|(desc, _)| {
+                    let desc = desc.to_ascii_lowercase();
+                    desc.contains(&wanted) || wanted.contains(&desc)
+                })
+            })
+            .map(|(_, bytes)| *bytes)
+    }
+
     fn query_gpus(connection: &WMIConnection) -> Vec<GpuInfo> {
+        let registry = registry_vram();
         query::<Win32VideoController>(
             connection,
             "SELECT Name, AdapterCompatibility, DriverVersion, AdapterRAM FROM Win32_VideoController",
@@ -429,14 +507,20 @@ mod windows_query {
             {
                 return None;
             }
-            Some(GpuInfo {
-                name: name.trim().to_string(),
-                vendor: controller.adapter_compatibility.unwrap_or_default().trim().to_string(),
-                driver_version: controller.driver_version.unwrap_or_default().trim().to_string(),
-                vram_bytes: controller
+            let name = name.trim().to_string();
+            // Prefer the 64-bit registry value; AdapterRAM is only a fallback
+            // because it cannot represent more than 4 GB.
+            let vram_bytes = matching_vram(&registry, &name).or_else(|| {
+                controller
                     .adapter_ram
                     .filter(|bytes| *bytes > 0)
-                    .map(u64::from),
+                    .map(u64::from)
+            });
+            Some(GpuInfo {
+                name,
+                vendor: controller.adapter_compatibility.unwrap_or_default().trim().to_string(),
+                driver_version: controller.driver_version.unwrap_or_default().trim().to_string(),
+                vram_bytes,
             })
         })
         .collect()
@@ -733,6 +817,27 @@ mod tests {
         enrich_profile(&mut profile, &snapshot);
         assert_eq!(profile.disks[0].kind, DiskKind::Ssd);
         assert_eq!(profile.disks[0].name, "Big");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn vram_entries_match_by_name() {
+        let entries = vec![
+            ("NVIDIA GeForce RTX 3060".to_string(), 12 * 1024_u64.pow(3)),
+            ("Intel(R) UHD Graphics 630".to_string(), 1024_u64.pow(3)),
+        ];
+        assert_eq!(
+            windows_query::matching_vram(&entries, "NVIDIA GeForce RTX 3060"),
+            Some(12 * 1024_u64.pow(3))
+        );
+        assert_eq!(
+            windows_query::matching_vram(&entries, "nvidia geforce rtx 3060"),
+            Some(12 * 1024_u64.pow(3))
+        );
+        assert_eq!(
+            windows_query::matching_vram(&entries, "AMD Radeon RX 6600"),
+            None
+        );
     }
 
     #[cfg(windows)]
